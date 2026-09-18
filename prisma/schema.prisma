@@ -1,0 +1,385 @@
+// 106 Casino — veritabanı şeması (PostgreSQL / Railway)
+//
+// TASARIM İLKELERİ
+// ----------------
+// 1. Para her yerde TAM SAYI centicoin (1 coin = 100). Asla float/decimal değil.
+// 2. Ledger append-only: hiçbir satır güncellenmez veya silinmez. Bakiye, ledger
+//    toplamıyla her zaman mutabık olmalı — backoffice bunu denetler.
+// 3. Tur sonucu sunucuda üretilir ve İSTEMCİYE GİTMEYEN alanlarda saklanır
+//    (Round.secret). Crash'in çöküş noktası, Higher/Lower'ın destesi burada durur.
+// 4. Provably fair: SeedPair.serverSeed yalnız seed döndürüldükten sonra açılır;
+//    o ana kadar sadece hash'i yayınlanır.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL") // migration için havuzsuz bağlantı
+}
+
+/* ================================================================== */
+/* KULLANICI                                                          */
+/* ================================================================== */
+
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique // yalnız @106dijital.com
+  name      String
+  avatarUrl String?
+  role      Role     @default(PLAYER)
+
+  // Yönetici tarafından askıya alındıysa oynayamaz ama verisi durur.
+  suspendedAt     DateTime?
+  suspendedReason String?
+
+  balance     Int      @default(0) // centicoin — ledger ile mutabık olmalı
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  seedPairs    SeedPair[]
+  rounds       Round[]
+  ledger       LedgerEntry[]
+  dailyClaims  DailyClaim[]
+  missions     UserMission[]
+  badges       UserBadge[]
+  stat         PlayerStat?
+  feedEvents   FeedEvent[]
+  adminActions AdminAudit[] @relation("AdminActor")
+
+  @@index([balance])
+}
+
+/* ================================================================== */
+/* PROVABLY FAIR TOHUMLARI                                            */
+/* ================================================================== */
+
+model SeedPair {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // serverSeed, seed döndürülene kadar API'den ASLA dönmez.
+  serverSeed     String
+  serverSeedHash String // sha256(serverSeed) — bahisten önce yayınlanır
+  clientSeed     String
+  nonce          Int    @default(0) // bu çiftle oynanan tur sayacı
+
+  active     Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  revealedAt DateTime? // seed döndürüldüğü an; sonrasında serverSeed açık
+
+  rounds Round[]
+
+  // "Kullanıcı başına en fazla BİR aktif tohum çifti" kuralı kısmi indeksle
+  // kurulur (Prisma bunu ifade edemiyor, migration'a elle eklenir):
+  //   CREATE UNIQUE INDEX one_active_seed_per_user
+  //     ON "SeedPair" ("userId") WHERE active;
+  @@index([userId, createdAt])
+}
+
+/* ================================================================== */
+/* TURLAR                                                             */
+/* ================================================================== */
+
+enum Game {
+  WHEEL
+  CRASH
+  DICE
+  PLINKO
+  SCRATCH
+  GUESS
+  MYSTERY
+  HIGHERLOWER
+}
+
+enum RoundState {
+  OPEN // çok adımlı oyun sürüyor (crash uçuşta, hilo zinciri açık)
+  SETTLED
+  VOIDED // yönetici iptali — bahis iade edilir
+}
+
+model Round {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  game  Game
+  state RoundState @default(SETTLED)
+
+  bet    Int // centicoin
+  payout Int @default(0) // centicoin, brüt
+  // Gösterim çarpanı ×10000 (950000 = 95.0000x). Tam sayı tutulur ki
+  // sıralama ve "en yüksek çarpan" rekoru kayan noktaya bağlı olmasın.
+  multX4 Int @default(0)
+
+  seedPairId String
+  seedPair   SeedPair @relation(fields: [seedPairId], references: [id])
+  nonce      Int
+
+  // Oyuncunun seçtikleri (zar eşiği, plinko riski, seçilen kutu...).
+  params Json
+
+  // Turun herkese açık sonucu — animasyon ve geçmiş için.
+  result Json?
+
+  // İSTEMCİYE GİTMEZ. Crash çöküş noktası, hilo destesi, kazı-kazan ızgarası.
+  // API katmanı bu alanı hiçbir select'e koymaz.
+  secret Json?
+
+  // Aynı isteğin iki kez işlenmesini engeller (ağ tekrarı, çift tık).
+  idempotencyKey String @unique
+
+  createdAt DateTime  @default(now())
+  settledAt DateTime?
+  expiresAt DateTime? // OPEN turlar için: bu andan sonra otomatik kapanır
+
+  ledger LedgerEntry[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([game, createdAt(sort: Desc)])
+  @@index([state, expiresAt])
+  @@index([multX4(sort: Desc)])
+}
+
+/* ================================================================== */
+/* DEFTER (append-only)                                               */
+/* ================================================================== */
+
+enum LedgerType {
+  DAILY_RESET // her sabah bakiyeyi 1.000 coin'e sabitleme
+  STREAK_BONUS
+  MISSION_REWARD
+  BADGE_REWARD
+  BET // negatif
+  PAYOUT // pozitif
+  REFUND // iptal edilen tur
+  ADMIN_ADJUST
+}
+
+model LedgerEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type         LedgerType
+  amount       Int // işaretli centicoin
+  balanceAfter Int // yazıldığı andaki bakiye — denetim için
+
+  roundId String?
+  round   Round?  @relation(fields: [roundId], references: [id])
+
+  // ADMIN_ADJUST için: kim yaptı, neden.
+  actorId String?
+  note    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([type, createdAt(sort: Desc)])
+}
+
+/* ================================================================== */
+/* GÜNLÜK HAK VE SERİ                                                 */
+/* ================================================================== */
+
+model DailyClaim {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Europe/Istanbul takvim günü (YYYY-MM-DD). Gün sınırı sunucu saatiyle.
+  day       String
+  streakDay Int // 1..7+ — art arda kaçıncı gün
+  granted   Int // verilen toplam centicoin (günlük hak + seri bonusu)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, day])
+  @@index([day])
+}
+
+/* ================================================================== */
+/* GÖREVLER                                                           */
+/* ================================================================== */
+
+enum MissionKind {
+  PLAY_N_GAMES // farklı oyun oyna
+  PLAY_N_ROUNDS
+  WIN_N_ROUNDS
+  WIN_STREAK
+  HIT_MULTIPLIER // şu çarpanı yakala
+  WAGER_TOTAL
+}
+
+model Mission {
+  id       String      @id @default(cuid())
+  day      String // hangi güne ait (YYYY-MM-DD)
+  kind     MissionKind
+  target   Int
+  game     Game? // boşsa tüm oyunlar sayılır
+  reward   Int // centicoin
+  title    String
+  subtitle String?
+
+  progress UserMission[]
+
+  @@unique([day, kind, game])
+  @@index([day])
+}
+
+model UserMission {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  missionId String
+  mission   Mission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+
+  progress   Int       @default(0)
+  completedAt DateTime?
+  claimedAt  DateTime?
+
+  @@unique([userId, missionId])
+  @@index([userId, completedAt])
+}
+
+/* ================================================================== */
+/* ROZETLER                                                           */
+/* ================================================================== */
+
+model Badge {
+  id          String @id // "first-blood", "yuz-kat", "haftanin-krali"
+  title       String
+  description String
+  icon        String
+  tier        Int    @default(1) // 1 bronz, 2 gümüş, 3 altın
+  reward      Int    @default(0)
+
+  holders UserBadge[]
+}
+
+model UserBadge {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId String
+  badge   Badge  @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  earnedAt DateTime @default(now())
+  context  Json? // hangi turda kazanıldı
+
+  @@unique([userId, badgeId])
+  @@index([userId, earnedAt(sort: Desc)])
+}
+
+/* ================================================================== */
+/* SIRALAMA                                                           */
+/* ================================================================== */
+
+// Sıralama ölçütü ZİRVE BAKİYE: sezon boyunca ulaşılan en yüksek bakiye.
+// Böylece "hiç oynamayan kazanır" sorunu oluşmaz — risk almak ödüllendirilir.
+model PlayerStat {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  peakBalance    Int @default(0) // ← ana sıralama
+  peakBalanceAt  DateTime?
+
+  biggestWin     Int @default(0) // tek turda kazanılan en yüksek tutar
+  biggestWinRoundId String?
+  biggestMultX4  Int @default(0) // tek turda yakalanan en yüksek çarpan ×10000
+  biggestMultRoundId String?
+
+  roundsPlayed   Int @default(0)
+  totalWagered   Int @default(0)
+  totalWon       Int @default(0)
+  gamesTouched   Int @default(0) // kaç farklı oyun denendi (rozet için)
+
+  currentStreak  Int @default(0) // art arda giriş günü
+  longestStreak  Int @default(0)
+  bestWinStreak  Int @default(0) // art arda kazanılan tur
+
+  updatedAt DateTime @updatedAt
+
+  @@index([peakBalance(sort: Desc)])
+  @@index([biggestMultX4(sort: Desc)])
+  @@index([totalWagered(sort: Desc)])
+}
+
+// Günlük sıralama ("Günün Kralı") — her gün sıfırdan başlar.
+model DailyStat {
+  id     String @id @default(cuid())
+  userId String
+  day    String
+
+  peakBalance   Int @default(0)
+  netResult     Int @default(0) // gün içi kâr/zarar
+  roundsPlayed  Int @default(0)
+  biggestMultX4 Int @default(0)
+
+  @@unique([userId, day])
+  @@index([day, peakBalance(sort: Desc)])
+}
+
+/* ================================================================== */
+/* CANLI KAZANÇ AKIŞI                                                 */
+/* ================================================================== */
+
+model FeedEvent {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  game    Game
+  payout  Int
+  multX4  Int
+  roundId String?
+
+  // "En güzel anlar" şeridinde kalıcı kalsın diye işaretlenenler.
+  pinned Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([pinned, multX4(sort: Desc)])
+}
+
+/* ================================================================== */
+/* YÖNETİM DENETİM KAYDI                                              */
+/* ================================================================== */
+
+model AdminAudit {
+  id      String @id @default(cuid())
+  actorId String
+  actor   User   @relation("AdminActor", fields: [actorId], references: [id])
+
+  action     String // "ADJUST_BALANCE", "SUSPEND_USER", "VOID_ROUND", "RESET_SEASON"
+  targetType String
+  targetId   String
+  before     Json?
+  after      Json?
+  note       String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+}
+
+/* ================================================================== */
+/* HIZ SINIRI (Redis yoksa yedek)                                     */
+/* ================================================================== */
+
+model RateBucket {
+  key       String   @id // "user:<id>:bet"
+  count     Int      @default(0)
+  windowAt  DateTime
+  updatedAt DateTime @updatedAt
+}

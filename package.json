@@ -1,0 +1,19 @@
+{
+  "name": "106-casino",
+  "version": "1.0.0",
+  "scripts": {
+    "sim": "tsx scripts/simulate.ts",
+    "verify:hilo": "tsx scripts/verify-hilo.ts",
+    "calibrate": "tsx scripts/calibrate-plinko.ts",
+    "validate:schema": "node scripts/validate-schema.mjs"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@prisma/internals": "^6.19.3",
+    "@types/node": "^26.6.1",
+    "prisma": "^6.19.3",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "private": true
+}
