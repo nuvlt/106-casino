@@ -16,5 +16,5 @@ Thumbs.db
 
 .vercel
 .turbo
-
-prisma/generated/
+next-env.d.ts
+tsconfig.tsbuildinfo

@@ -338,8 +338,8 @@ Gerçek para yok ama sıralama var — yani manipülasyon güdüsü var.
 Her bahis tek bir transaction:
 
 ```sql
-UPDATE "User" SET balance = balance - $bet
- WHERE id = $userId AND balance >= $bet AND "suspendedAt" IS NULL
+UPDATE "user" SET balance = balance - $bet
+ WHERE id = $userId AND balance >= $bet AND suspended_at IS NULL
 RETURNING balance;
 -- 0 satır döndüyse: yetersiz bakiye → tur açılmaz
 ```
@@ -350,9 +350,18 @@ hepsi aynı transaction içinde.
 
 ### 7.3 Idempotency
 
-Her bahis isteği istemciden bir `Idempotency-Key` taşır (`Round.idempotencyKey`
-üzerinde `@unique`). Ağ tekrarı veya çift tık ikinci turu açmaz, ilkinin
-sonucunu döndürür.
+Her bahis isteği istemciden bir `Idempotency-Key` taşır (`round.idempotency_key`
+üzerinde tekil kısıt). Ağ tekrarı veya çift tık ikinci turu açmaz, ilkinin
+sonucunu döndürür. Entegrasyon testiyle doğrulanmıştır.
+
+### 7.3b Test edilmiş güvence
+
+`npm test` gömülü bir Postgres motoruna (PGlite) karşı 19 kontrol çalıştırır:
+günlük hakkın bir kez verilmesi, bakiyenin biriktirilmemesi, yetersiz
+bakiyenin reddi, idempotency anahtarının ikinci turu açmaması, **ledger
+toplamının bakiyeyle birebir tutması**, zirve bakiyenin düşüşte korunması ve
+`serverSeed`'in istemciye dönen yanıtta hiç geçmemesi. Sahte nesne yok —
+gerçek transaction, gerçek kısıtlar.
 
 ### 7.4 Doğrulama ve hız sınırı
 
@@ -373,7 +382,7 @@ cron ile kaybedilmiş olarak kapatılır.
 
 ### 7.6 Denetlenebilirlik
 
-- `LedgerEntry` **append-only** — güncellenmez, silinmez. Her satırda
+- `ledger_entry` **append-only** — güncellenmez, silinmez. Her satırda
   `balanceAfter` var; bakiye ile ledger toplamı her zaman mutabık olmalı.
 - Yöneticinin yaptığı her bakiye müdahalesi `AdminAudit`'e yazılır.
   Kendini de denetlenebilir yapmak, güvenin asıl kaynağı.
@@ -427,13 +436,21 @@ GET  /api/admin/reconcile        bakiye ↔ ledger mutabakatı
 | Framework | Next.js 15 App Router + TypeScript |
 | Arayüz | Tailwind + Framer Motion, **mobile-first** |
 | Auth | Auth.js v5, Google, veritabanı oturumu |
-| Veritabanı | Railway PostgreSQL + Prisma (`DIRECT_DATABASE_URL` migration için) |
+| Veritabanı | Railway PostgreSQL + Drizzle ORM (`DIRECT_DATABASE_URL` migration için) |
 | Önbellek | Railway Redis — hız sınırı, sıralama, akış |
 | Barındırma | Vercel (arayüz + API), cron için Vercel Cron |
 | RNG | Node `crypto` — HMAC-SHA256 |
 
-Serverless bağlantı limiti için Prisma'ya bağlantı havuzu (`?pgbouncer=true`)
-ile bağlanılır; migration ayrı doğrudan bağlantı kullanır.
+Serverless bağlantı limiti için havuz küçük tutulur (`max: 5`) ve hazır
+ifade (prepared statement) kapatılır — pgbouncer'ın transaction pooling
+kipiyle uyumluluk için gerekli. Migration ayrı, havuzsuz bağlantı kullanır.
+
+**Neden Prisma değil Drizzle:** Prisma her komutunda (`generate`, `migrate`,
+hatta `validate`) `binaries.prisma.sh` üzerinden motor ikilisi indirmeye
+çalışıyor ve bu alan adı şirket ağ politikasıyla engelli. Drizzle saf
+TypeScript — hiçbir ikili indirmiyor, migration'lar okunabilir düz SQL
+dosyaları olarak üretiliyor. Ek kazanç: Prisma'nın ifade edemediği kısmi
+tekil indeks (`WHERE active`) doğrudan şemada tanımlanabiliyor.
 
 ### Ortam değişkenleri
 
@@ -460,6 +477,11 @@ TZ=Europe/Istanbul
 ---
 
 ## 11. Sürüm planı
+
+**Tamamlananlar**
+Oyun matematiği (doğrulanmış), provably fair RNG, veritabanı şeması ve
+migration, Google girişi + domain kontrolü, ekonomi (günlük hak/seri/görev),
+cüzdan ve güvenlik katmanı, `/api/me`.
 
 **v1 (ilk sürüm)**
 Giriş + ekonomi + 8 oyun + sıralama + akış + görevler + rozetler + backoffice
