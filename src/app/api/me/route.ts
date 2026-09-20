@@ -8,10 +8,11 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { badges, missions, playerStats, userBadges, userMissions } from "@/db/schema";
+import { badges, missions, playerStats, rounds, userBadges, userMissions } from "@/db/schema";
 import { ApiError, fail, requireUser } from "@/lib/api";
 import { ensureDailyState, streakBonusFor } from "@/lib/economy";
 import { ensureActiveSeed } from "@/lib/seeds";
+import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { COIN } from "@/lib/games/config";
 import { trtDay } from "@/lib/day";
 
@@ -22,7 +23,15 @@ export async function GET() {
     const user = await requireUser();
     const daily = await ensureDailyState(db, user.id);
     const seed = await ensureActiveSeed(db, user.id);
+    // Yarım kalmış turlar burada sonuçlanır (bkz. lib/crash.ts).
+    await resolveDecidedCrashRounds(db, user.id);
     const day = trtDay();
+
+    const [openRound] = await db
+      .select({ id: rounds.id, game: rounds.game, bet: rounds.bet })
+      .from(rounds)
+      .where(and(eq(rounds.userId, user.id), eq(rounds.state, "OPEN")))
+      .limit(1);
 
     const [stat] = await db
       .select()
@@ -86,6 +95,7 @@ export async function GET() {
         totalWagered: stat?.totalWagered ?? 0,
         currentWinStreak: stat?.currentWinStreak ?? 0,
       },
+      openRound: openRound ?? null,
       missions: todaysMissions,
       badges: earned,
       // serverSeed YOK — yalnızca hash. Tohum döndürülünce açılır.

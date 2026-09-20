@@ -136,12 +136,15 @@ async function consumeNonce(tx: Tx, userId: string) {
 /** Aynı anda birden fazla açık tur olamaz — ikinci Crash başlatılamaz. */
 async function assertNoOpenRound(tx: Tx, userId: string): Promise<void> {
   const [open] = await tx
-    .select({ id: rounds.id })
+    .select({ id: rounds.id, game: rounds.game })
     .from(rounds)
     .where(and(eq(rounds.userId, userId), eq(rounds.state, "OPEN")))
     .limit(1);
   if (open) {
-    throw new WalletError("Zaten devam eden bir turunuz var", "ROUND_OPEN");
+    throw new WalletError(
+      "Devam eden bir turun var — önce onu bitir",
+      "ROUND_OPEN",
+    );
   }
 }
 

@@ -11,6 +11,7 @@ import { ApiError, fail, requireUser, type SessionUser } from "@/lib/api";
 import { betRateLimit } from "@/lib/ratelimit";
 import { ensureDailyState } from "@/lib/economy";
 import { ensureActiveSeed } from "@/lib/seeds";
+import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { WalletError } from "@/lib/wallet";
 import { firstError } from "@/lib/validation";
 
@@ -67,6 +68,9 @@ export function gameRoute<S extends z.ZodTypeAny>(
         // Sabah ilk oyununda günlük hak burada verilir.
         await ensureDailyState(db, user.id);
         await ensureActiveSeed(db, user.id);
+        // Sekme kapanınca yarım kalmış Crash turları burada sonuçlanır;
+        // aksi halde oyuncu kendi eski turu yüzünden kilitli kalırdı.
+        await resolveDecidedCrashRounds(db, user.id);
       }
 
       return NextResponse.json(await run({ user, body: parsed.data }));

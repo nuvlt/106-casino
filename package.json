@@ -15,7 +15,8 @@
     "calibrate": "tsx scripts/calibrate-plinko.ts",
     "test": "tsx scripts/test-wallet.mts",
     "test:games": "tsx scripts/test-games.mts",
-    "test:all": "npm run test && npm run test:games && npm run verify:migration"
+    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run verify:migration",
+    "test:stale": "tsx scripts/test-stale.mts"
   },
   "license": "ISC",
   "devDependencies": {
@@ -25,7 +26,9 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "drizzle-kit": "^0.31.10",
+    "playwright": "^1.63.0",
     "postcss": "^8.5.28",
+    "puppeteer-core": "^25.11.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3"
