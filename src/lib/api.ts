@@ -4,7 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db } from "@/db";
+import { db, ensureSchema } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -31,6 +31,9 @@ export function fail(status: number, message: string, code = "ERROR") {
 
 /** Oturumu doğrular ve kullanıcının askıda olmadığını garanti eder. */
 export async function requireUser(): Promise<SessionUser> {
+  // Gömülü (yerel) kipte şema ilk istekte hazırlanır; gerçek Postgres'te
+  // bu çağrı hiçbir şey yapmaz.
+  await ensureSchema();
   const session = await auth();
   if (!session?.user?.id) throw new ApiError(401, "Giriş yapmalısınız", "UNAUTHENTICATED");
 

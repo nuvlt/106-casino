@@ -418,9 +418,13 @@ export const dailyStats = pgTable(
     day: text("day").notNull(),
 
     peakBalance: integer("peak_balance").notNull().default(0),
+    // Gün içi en düşük bakiye — "Küllerinden" rozeti bunu kullanır.
+    minBalance: integer("min_balance").notNull().default(2_147_483_647),
     netResult: integer("net_result").notNull().default(0), // gün içi kâr/zarar
     roundsPlayed: integer("rounds_played").notNull().default(0),
     biggestMultX4: integer("biggest_mult_x4").notNull().default(0),
+    winsToday: integer("wins_today").notNull().default(0),
+    wageredToday: integer("wagered_today").notNull().default(0),
   },
   (t) => [
     uniqueIndex("daily_stat_user_day").on(t.userId, t.day),

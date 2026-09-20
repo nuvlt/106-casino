@@ -1,5 +1,5 @@
 {
-  "id": "898efbd7-9a08-433a-b36f-9c6704e99711",
+  "id": "c588bd0e-235f-44b7-b23d-9c4eed723747",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -405,6 +405,13 @@
           "notNull": true,
           "default": 0
         },
+        "min_balance": {
+          "name": "min_balance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 2147483647
+        },
         "net_result": {
           "name": "net_result",
           "type": "integer",
@@ -421,6 +428,20 @@
         },
         "biggest_mult_x4": {
           "name": "biggest_mult_x4",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "wins_today": {
+          "name": "wins_today",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "wagered_today": {
+          "name": "wagered_today",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

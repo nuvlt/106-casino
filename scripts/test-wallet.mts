@@ -21,6 +21,7 @@ import { ensureDailyState } from "../src/lib/economy.ts";
 import { ensureActiveSeed } from "../src/lib/seeds.ts";
 import { settleRound, WalletError } from "../src/lib/wallet.ts";
 import { resolveDice, resolveWheel } from "../src/lib/games/engine.ts";
+import { seedBadges } from "../src/lib/badges.ts";
 import { COIN, DAILY_GRANT } from "../src/lib/games/config.ts";
 
 let passed = 0;
@@ -47,6 +48,7 @@ for (const file of readdirSync("drizzle").filter((f) => f.endsWith(".sql")).sort
   }
 }
 const db = drizzle(client, { schema }) as unknown as Db;
+await db.transaction(async (tx) => seedBadges(tx as never));
 
 await db.insert(schema.users).values({ id: "u1", email: "onur@106dijital.com", name: "Onur T." });
 
@@ -81,8 +83,13 @@ const r1 = await settleRound(db, {
   idempotencyKey: "key-1",
   resolve: (rng) => resolveWheel(rng, bet),
 });
-check("tur çözüldü ve bakiye güncellendi", r1.balance === DAILY_GRANT - bet + r1.payout,
-  `beklenen ${DAILY_GRANT - bet + r1.payout}, gelen ${r1.balance}`);
+// İlk tur "İlk Kan" rozetini de kazandırır; ödülü bakiyeye eklenir.
+const badgeReward = r1.newBadges.reduce((sum, b) => sum + b.reward, 0);
+check("tur çözüldü ve bakiye güncellendi (rozet ödülü dahil)",
+  r1.balance === DAILY_GRANT - bet + r1.payout + badgeReward,
+  `beklenen ${DAILY_GRANT - bet + r1.payout + badgeReward}, gelen ${r1.balance}`);
+check("ilk tur 'İlk Kan' rozetini verdi", r1.newBadges.some((b) => b.id === "ilk-kan"),
+  r1.newBadges.map((b) => b.id).join(","));
 check("çarpan ile ödeme tutarlı", r1.payout === Math.floor(bet * r1.mult));
 check("tohum bilgisi dönüyor, serverSeed dönmüyor",
   !!r1.fairness.serverSeedHash && !("serverSeed" in r1.fairness));

@@ -53,9 +53,12 @@ CREATE TABLE "daily_stat" (
 	"user_id" text NOT NULL,
 	"day" text NOT NULL,
 	"peak_balance" integer DEFAULT 0 NOT NULL,
+	"min_balance" integer DEFAULT 2147483647 NOT NULL,
 	"net_result" integer DEFAULT 0 NOT NULL,
 	"rounds_played" integer DEFAULT 0 NOT NULL,
-	"biggest_mult_x4" integer DEFAULT 0 NOT NULL
+	"biggest_mult_x4" integer DEFAULT 0 NOT NULL,
+	"wins_today" integer DEFAULT 0 NOT NULL,
+	"wagered_today" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "feed_event" (

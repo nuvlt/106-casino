@@ -177,6 +177,22 @@ Tavan 10.000x.
 **sunucu** hesaplar (`tur başlangıç zaman damgası` → geçen süre → çarpan).
 İstemci "ben 12x'te bastım" diyemez.
 
+**Tolerans yoktur — ve bu bilinçli bir düzeltmedir.** Bu şartnamenin ilk
+halinde "ağ gecikmesi için 150 ms tolerans" yazıyordu. Bu sömürülebilir
+bir açıktı: oyuncu çöküşü ekranda gördükten sonra 150 ms içinde istek
+atarsa, sunucu çarpanı çöküşten 150 ms öncesine göre hesaplayıp kabul
+ederdi — basit bir betikle neredeyse her tur kazanılabilirdi.
+
+Yerine iki yol var:
+- **Manuel çekim:** sunucunun isteği aldığı an esastır. Gecikme herkes
+  için aynı yönde çalışır.
+- **Otomatik çekim:** hedef tur BAŞINDA, çöküş noktası bilinmeden yazılır.
+  Sonuç zamandan tamamen bağımsız hesaplanır; gecikmeden hiç etkilenmez.
+
+Entegrasyon testi bu açığın kapalı olduğunu doğrular: çöküşü geçmiş bir
+tura yapılan çekim kazanç saymaz, 10 dakika geçmiş otomatik çekim ise
+hedefinden öder.
+
 ### 5.3 Dice
 
 0,00–99,99 arası 10.000 eşit olasılıklı sonuç. Oyuncu kazanan sonuç
@@ -289,6 +305,19 @@ npm run calibrate      # Plinko tablolarını yeniden üret
 
 ---
 
+## 5.10 Yerel geliştirme — hiçbir dış servise bağlı değil
+
+`DATABASE_URL=pglite://memory` verildiğinde Postgres'in WASM'a derlenmiş
+tam sürümü süreç içinde çalışır; Railway, Docker veya kurulu bir veritabanı
+gerekmez. Şema ilk istekte otomatik uygulanır, rozet tanımları yazılır.
+
+`DEV_LOGIN=1` ile `/api/dev/login` ucu açılır ve Google OAuth kurmadan
+oturum açılabilir. Bu uç üç koşul birden sağlanmazsa **404** döner:
+`NODE_ENV === "development"`, `DEV_LOGIN === "1"` ve isteğin localhost'tan
+gelmesi. Üretim derlemesinde hiçbir koşulda çalışmaz.
+
+---
+
 ## 6. Provably fair
 
 Her turun sonucu üç girdiden üretilir:
@@ -354,7 +383,22 @@ Her bahis isteği istemciden bir `Idempotency-Key` taşır (`round.idempotency_k
 üzerinde tekil kısıt). Ağ tekrarı veya çift tık ikinci turu açmaz, ilkinin
 sonucunu döndürür. Entegrasyon testiyle doğrulanmıştır.
 
-### 7.3b Test edilmiş güvence
+### 7.3b Test edilmiş güvence — oyun akışı
+
+`npm run test:games` gömülü Postgres'e karşı 30 kontrol çalıştırır:
+açık tur kilidi (Crash açıkken ikinci bahis engellenir), Crash çarpanının
+sunucu saatinden hesaplanması, çöküş sonrası çekimin kazanç saymaması,
+otomatik çekimin zamandan bağımsızlığı, aynı turun iki kez ödenememesi,
+Higher/Lower'da ilk adımın ev avantajı (×0,95) ve sonraki adımların tam
+adil (1/p) ödemesi, süresi geçen turların kapatılması, rozet ve görev
+ilerlemesinin turla aynı transaction'da yazılması.
+
+Ayrıca uçlar gerçek HTTP üzerinden denendi: hız sınırı 5 istekten sonra
+429 veriyor, doğrulama hataları doğru kodlarla dönüyor, `serverSeed`
+hiçbir yanıtta geçmiyor, Crash'in çöküş noktası tur kapanana kadar
+sızmıyor, Higher/Lower'ın destesi hiç görünmüyor.
+
+### 7.3c Test edilmiş güvence
 
 `npm test` gömülü bir Postgres motoruna (PGlite) karşı 19 kontrol çalıştırır:
 günlük hakkın bir kez verilmesi, bakiyenin biriktirilmemesi, yetersiz
@@ -481,7 +525,9 @@ TZ=Europe/Istanbul
 **Tamamlananlar**
 Oyun matematiği (doğrulanmış), provably fair RNG, veritabanı şeması ve
 migration, Google girişi + domain kontrolü, ekonomi (günlük hak/seri/görev),
-cüzdan ve güvenlik katmanı, `/api/me`.
+cüzdan ve güvenlik katmanı, rozetler, görev ilerlemesi, `/api/me`,
+**sekiz oyunun tamamının API uçları** (tek adımlı altısı + Crash + Hilo),
+Railway'e bağlı olmayan yerel geliştirme kipi.
 
 **v1 (ilk sürüm)**
 Giriş + ekonomi + 8 oyun + sıralama + akış + görevler + rozetler + backoffice

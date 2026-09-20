@@ -13,7 +13,9 @@
     "sim": "tsx scripts/simulate.ts",
     "verify:hilo": "tsx scripts/verify-hilo.ts",
     "calibrate": "tsx scripts/calibrate-plinko.ts",
-    "test": "tsx scripts/test-wallet.mts"
+    "test": "tsx scripts/test-wallet.mts",
+    "test:games": "tsx scripts/test-games.mts",
+    "test:all": "npm run test && npm run test:games && npm run verify:migration"
   },
   "license": "ISC",
   "devDependencies": {

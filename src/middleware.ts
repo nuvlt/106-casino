@@ -5,7 +5,9 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/giris", "/api/auth", "/api/cron"];
+// "/api/dev" yalnızca geliştirme kipinde var olur; ucun kendi içinde
+// NODE_ENV, DEV_LOGIN ve localhost kontrolü var — üretimde 404 döner.
+const PUBLIC_PATHS = ["/giris", "/api/auth", "/api/cron", "/api/dev"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
