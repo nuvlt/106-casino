@@ -14,7 +14,8 @@
  * scripts/verify-hilo.ts ile tam sayım yapılarak kanıtlanır.
  */
 
-import { Rng, generateServerSeed } from "../src/lib/games/rng";
+import { generateServerSeed, rngFor } from "../src/lib/games/rng";
+import type { Rng } from "../src/lib/games/rng-core";
 import {
   MYSTERY_TIERS,
   PLINKO_TABLES,
@@ -42,7 +43,7 @@ const N = Number(process.env.N ?? 500_000);
 const SERVER_SEED = generateServerSeed();
 const CLIENT_SEED = "106-dijital-rtp-testi";
 let nonce = 0;
-const nextRng = () => new Rng(SERVER_SEED, CLIENT_SEED, nonce++);
+const nextRng = () => rngFor(SERVER_SEED, CLIENT_SEED, nonce++);
 
 interface Row {
   game: string;

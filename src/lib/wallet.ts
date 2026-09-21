@@ -26,7 +26,8 @@ import {
   type gameEnum,
 } from "@/db/schema";
 import type { Db, Tx } from "@/db/types";
-import { Rng } from "@/lib/games/rng";
+import { Rng } from "@/lib/games/rng-core";
+import { rngFor } from "@/lib/games/rng";
 import type { Outcome } from "@/lib/games/engine";
 import { MAX_BET, MIN_BET } from "@/lib/games/config";
 import { trtDay } from "@/lib/day";
@@ -375,7 +376,7 @@ export async function settleRound(
     const seed = await consumeNonce(tx, opts.userId);
 
     // Sonuç burada, sunucuda üretilir.
-    const rng = new Rng(seed.serverSeed, seed.clientSeed, seed.nonce);
+    const rng = rngFor(seed.serverSeed, seed.clientSeed, seed.nonce);
     const outcome = opts.resolve(rng);
 
     const multX4 = Math.round(outcome.mult * 10_000);
@@ -507,7 +508,7 @@ export async function openRound(
     const afterDebit = await debit(tx, opts.userId, opts.bet);
     const seed = await consumeNonce(tx, opts.userId);
 
-    const rng = new Rng(seed.serverSeed, seed.clientSeed, seed.nonce);
+    const rng = rngFor(seed.serverSeed, seed.clientSeed, seed.nonce);
     const { secret, publicState } = opts.build(rng);
 
     const now = new Date();

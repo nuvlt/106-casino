@@ -15,7 +15,7 @@ Tam şartname: [`docs/SPEC.md`](docs/SPEC.md)
 - [x] Sekiz oyunun API uçları, rozetler, günlük görev ilerlemesi
 - [x] Sekiz oyunun arayüzü ve ana sayfa
 - [x] Görev ödülü alma, rozet ve sıralama sayfaları
-- [ ] Backoffice + provably fair doğrulama sayfası
+- [x] Backoffice (/admin) + provably fair doğrulama sayfası (/dogrula)
 - [ ] Deploy (Vercel + Railway)
 
 ## Hızlı başlangıç — hiçbir kurulum gerekmez
@@ -73,7 +73,8 @@ npm run test:crash        # Crash tur durumu / çekim anı (13 kontrol)
 npm run test:outcome      # sonuç gösterimi: net kâr/zarar (17 kontrol)
 npm run test:missions     # görev ödülü alma, çift ödeme koruması (15 kontrol)
 npm run test:plinko       # çoklu top: her top ayrı tur (11 kontrol)
-npm run test:all          # hepsi (116 kontrol)
+npm run test:verify       # tarayıcı doğrulayıcısı = sunucu motoru (10 kontrol)
+npm run test:all          # hepsi (126 kontrol)
 npm run verify:migration  # migration'ı gerçekten çalıştırıp doğrula
 npm run sim               # RTP Monte Carlo doğrulaması (32 yapılandırma)
 npm run verify:hilo       # Higher/Lower tam permütasyon sayımı

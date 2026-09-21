@@ -111,6 +111,13 @@ export function Home() {
                   <span className="text-white/70">{me.fairness.nonce}</span>
                 </div>
               </div>
+              <Link
+                href="/dogrula"
+                className="mt-2.5 block rounded-2xl bg-white/6 py-2.5 text-center text-xs font-black
+                           text-white/70 ring-1 ring-white/10 transition hover:bg-white/12 active:bg-white/12"
+              >
+                Turlarını kendin doğrula →
+              </Link>
             </Card>
           </aside>
         ) : null}

@@ -74,7 +74,7 @@ export function Missions({
         <p className="mb-2.5 rounded-2xl bg-lose/15 px-3 py-2 text-xs text-lose">{error}</p>
       ) : null}
 
-      <ul className="space-y-2.5">
+      <ul className="space-y-1.5">
         {missions.map((m) => {
           const pct = Math.min(100, Math.round((m.progress / m.target) * 100));
           const done = m.completedAt !== null;
@@ -84,47 +84,52 @@ export function Missions({
           return (
             <li
               key={m.id}
-              className={`rounded-2xl p-3 ring-1 transition ${
+              className={`rounded-xl px-2.5 py-2 ring-1 transition ${
                 ready
-                  ? "bg-gold/10 ring-gold/45 shadow-[0_0_20px_rgba(255,201,74,0.18)]"
+                  ? "bg-gold/10 ring-gold/45"
                   : claimed
-                    ? "bg-win/8 ring-win/30"
+                    ? "bg-win/8 ring-win/25"
                     : "bg-black/25 ring-white/8"
               }`}
             >
-              <div className="mb-1.5 flex items-center gap-2">
-                <span className="text-sm font-black text-white">{m.title}</span>
-                {claimed ? <Pill tone="win">alındı ✓</Pill> : null}
-                <span className="tabular ml-auto text-xs font-black text-gold">
-                  +{coins(m.reward)}
+              <div className="flex items-center gap-2">
+                <span className="truncate text-[13px] font-black text-white">{m.title}</span>
+                <span className="hidden truncate text-[11px] text-muted sm:inline">
+                  · {m.subtitle}
                 </span>
-              </div>
-              <p className="mb-2 text-[11px] text-muted">{m.subtitle}</p>
-
-              <div className="h-2.5 overflow-hidden rounded-full bg-black/55 ring-1 ring-white/8">
-                <div
-                  className={`relative h-full rounded-full transition-all duration-700 ${
-                    done ? "bg-gradient-to-r from-[#1f8b4c] to-[#2fe08a]" : "gold-metal"
-                  }`}
-                  style={{ width: `${pct === 0 ? 0 : Math.max(pct, 4)}%` }}
-                />
-              </div>
-
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className="tabular text-[10px] text-muted">{progressLabel(m)}</span>
 
                 {ready ? (
                   <button
                     onClick={() => void claim(m.id)}
                     disabled={busy !== null}
-                    className="gold-metal font-display ml-auto animate-pulse-glow rounded-xl px-3.5 py-1.5
-                               text-[11px] font-black uppercase tracking-wide text-[#3a2500]
-                               shadow-[0_3px_0_#7a5804] transition active:translate-y-0.5
+                    className="gold-metal font-display ml-auto shrink-0 animate-pulse-glow rounded-lg px-2.5 py-1
+                               text-[10px] font-black uppercase tracking-wide text-[#3a2500]
+                               shadow-[0_2px_0_#7a5804] transition active:translate-y-0.5
                                active:shadow-none disabled:opacity-50"
                   >
-                    {busy === m.id ? "alınıyor…" : `Ödülü al +${coins(m.reward)}`}
+                    {busy === m.id ? "…" : `Al +${coins(m.reward)}`}
                   </button>
-                ) : null}
+                ) : (
+                  <span
+                    className={`tabular ml-auto shrink-0 text-[11px] font-black ${
+                      claimed ? "text-win/70" : "text-gold"
+                    }`}
+                  >
+                    {claimed ? "alındı ✓" : `+${coins(m.reward)}`}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-1.5 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/55 ring-1 ring-white/8">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${
+                      done ? "bg-gradient-to-r from-[#1f8b4c] to-[#2fe08a]" : "gold-metal"
+                    }`}
+                    style={{ width: `${pct === 0 ? 0 : Math.max(pct, 4)}%` }}
+                  />
+                </div>
+                <span className="tabular shrink-0 text-[10px] text-muted">{progressLabel(m)}</span>
               </div>
             </li>
           );

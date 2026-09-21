@@ -13,7 +13,7 @@ import { fail } from "@/lib/api";
 import { gameRoute } from "@/lib/game-routes";
 import { settleRound, type Game } from "@/lib/wallet";
 import type { Outcome } from "@/lib/games/engine";
-import type { Rng } from "@/lib/games/rng";
+import type { Rng } from "@/lib/games/rng-core";
 import {
   resolveDice,
   resolveGuess,

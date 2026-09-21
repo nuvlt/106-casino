@@ -461,17 +461,88 @@ GET  /api/admin/reconcile        bakiye ↔ ledger mutabakatı
 
 ---
 
-## 9. Backoffice
+## 9. Backoffice (/admin)
 
-`/admin`, yalnız `ADMIN` rolü. Kapsam bilinçli olarak dar:
+**Salt okunur.** Bu ekran hiçbir şeyi değiştirmez; bakiye elle
+düzeltme, tur iptali gibi yazma işlemleri bilerek yok. Gerekçe: defter
+append-only ve her satır o andaki bakiyeyi (`balanceAfter`) taşıyor.
+Elle müdahale bu zinciri kopardığı anda "bakiye nasıl bu hale geldi"
+sorusu cevaplanamaz hale gelir. Böyle bir ihtiyaç doğarsa ayrıca
+konuşulup `ADMIN_ADJUST` hareketi olarak, denetim kaydıyla eklenir.
 
-- **İşlemler** — tüm ledger; kullanıcı, oyun, tür, tarih filtresi; CSV dışa aktarım.
-- **Kullanıcılar** — bakiye, zirve, toplam çevrim, son görülme; askıya alma.
-- **Turlar** — tur detayı, seed bilgisi, `secret` alanı (kapanmış turlar için).
-- **Mutabakat** — `Σ ledger.amount == user.balance` kontrolü, sapma varsa kırmızı.
-- **Sağlık** — günlük sıfırlama cron'u çalıştı mı, açık kalan tur var mı.
+Erişim iki katmanlı: sayfa sunucuda rol kontrolünden geçer ve yönetici
+olmayana **404** döner (sayfanın varlığını bile sızdırmaz); uçların
+her biri ayrıca kendi başına `requireAdmin` çağırır, yani arayüzü
+atlayıp doğrudan API'ye gitmek de işe yaramaz. Test bunu doğruluyor:
+sıradan bir oyuncu üç admin ucundan da 403, sayfadan 404 alıyor.
 
----
+### Ne gösteriyor
+
+| Bölüm | İçerik |
+|---|---|
+| Bugün | tur, oynayan, çevrim, ödeme |
+| Gerçekleşen RTP | toplam ve oyun bazında `ödeme / çevrim` |
+| Defter bütünlüğü | defter toplamı = bakiyeler toplamı |
+| Para akışı | hareket türlerine göre toplam |
+| Hareketler | oyuncu ve tür filtreli, sayfalı defter |
+| Oyuncular | tur, çevrim, zirve, bakiye |
+
+**Defter bütünlüğü** en önemli satır: her para hareketi deftere de
+yazıldığı için bütün hareketlerin toplamı bütün bakiyelerin toplamına
+eşit olmak zorundadır. Eşit değilse ya bir ödeme deftere yazılmadan
+yapılmıştır ya da bir tur iki kez ödenmiştir — yani tam olarak bir
+backoffice'in yakalaması gereken şey. Tek bakışta görünüyor.
+
+**Gerçekleşen RTP** kısa vadede hedeften sapar; uyarı rengi yalnızca
+2.000 turdan sonra ve 3 puandan fazla sapmada çıkar. Aksi halde ilk
+gün herkes kırmızı görür ve gösterge anlamını yitirir.
+
+Sayfalama `createdAt`'e göre anahtar tabanlı (offset değil): araya yeni
+kayıt girdiğinde sayfa kaymıyor.
+
+## 9.0a Provably fair doğrulama sayfası (/dogrula)
+
+Bir doğrulama sayfasının tek değeri, oyuncunun sonucu **sunucuya
+sormadan** kendisinin hesaplayabilmesidir. "Sunucu diyor ki sonuç
+doğru" diyen bir sayfa hiçbir şey kanıtlamaz.
+
+Bu yüzden hesap tamamen tarayıcıda dönüyor:
+
+1. `rng.ts` ikiye ayrıldı. `rng-core.ts` platformdan bağımsız: içinde
+   node:crypto yok, `Rng` sınıfı bayt kaynağını **dışarıdan** alıyor.
+   `rng.ts` sunucu tarafı (node HMAC), `verify.ts` tarayıcı tarafı
+   (Web Crypto).
+2. Böylece oyuncunun tarayıcısında dönen kod, sunucunun çalıştırdığı
+   `engine.ts` çözücülerinin **birebir aynısı**. "Sunucu başka
+   hesaplıyor, doğrulayıcı başka" ihtimali ortadan kalkıyor.
+3. HMAC'i tarayıcının kendi kripto motoru hesaplıyor — oyuncu bize
+   değil kendi tarayıcısına güveniyor.
+
+Web Crypto eşzamansız olduğu için baytlar önce toplu hesaplanıp
+eşzamanlı `Rng`'ye besleniyor; reddetme örneklemesi bütçeyi aşarsa
+blok sayısı artırılıp baştan deneniyor.
+
+Sayfa ayrıca yayınlanan hash'in açılan sunucu tohumuna gerçekten
+karşılık geldiğini de tarayıcıda sınıyor (SHA-256).
+
+`scripts/test-verify.mts` sunucu ile tarayıcı yolunu altı oyunun her
+biri için 400 turda karşılaştırıyor — 2.400 turun hepsinde ödeme,
+çarpan ve ayrıntı birebir aynı.
+
+### Yakalanan hata
+
+İlk denemede sayfadaki her tur "uyuşmadı" çıktı. Sebep: `params`
+sütunu bahsi **içermiyor** (bahis turun kendi `bet` sütununda duruyor),
+sayfa ise `params`'ı olduğu gibi çözücüye veriyordu ve `bet=undefined`
+ile ödeme NaN oluyordu. Düzeltildi; teste de veritabanındaki gerçek
+kayıt biçiminden doğrulama yapan bir bölüm eklendi — birleştirme
+unutulursa test artık bunu fark ediyor.
+
+### Kapsam dışı
+
+Crash ve Yüksek/Alçak çok adımlı oyunlar; sonuçları tek bir tur
+çözücüsüyle üretilmediği için listede "doğrulama dışı" işaretleniyor.
+Tohumları yine açılıyor, yani isteyen elle hesaplayabilir.
 
 ## 9.1 Ses
 
