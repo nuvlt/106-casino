@@ -1,6 +1,7 @@
 "use client";
 
 import { coins } from "@/lib/format";
+import { sfx } from "@/lib/sound";
 import { MAX_BET, MIN_BET, COIN } from "@/lib/games/config";
 
 const PRESETS = [
@@ -40,7 +41,11 @@ export function BetControls({
             <button
               key={p.v}
               disabled={off}
-              onClick={() => setBet(p.amount)}
+              onClick={() => {
+                sfx.prime();
+                sfx.chip();
+                setBet(p.amount);
+              }}
               aria-label={`${p.v} coin`}
               className={`relative grid size-12 shrink-0 place-items-center rounded-full
                 font-display text-xs font-black transition disabled:opacity-25
@@ -71,9 +76,9 @@ export function BetControls({
 
       <div className="flex gap-1.5">
         {[
-          { label: "½", fn: () => setBet(clamp(Math.floor(bet / 2))) },
-          { label: "2×", fn: () => setBet(clamp(bet * 2)) },
-          { label: "hepsi", fn: () => setBet(clamp(balance)) },
+          { label: "½", fn: () => { sfx.click(); setBet(clamp(Math.floor(bet / 2))); } },
+          { label: "2×", fn: () => { sfx.click(); setBet(clamp(bet * 2)); } },
+          { label: "hepsi", fn: () => { sfx.click(); setBet(clamp(balance)); } },
         ].map((b) => (
           <button
             key={b.label}

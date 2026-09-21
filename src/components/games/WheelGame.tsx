@@ -1,13 +1,22 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { BetControls } from "@/components/games/BetControls";
 import { ResultFlash } from "@/components/games/ResultFlash";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN } from "@/lib/games/config";
-import { PRIZE_TABLE, SECTORS, TIER_STYLE, landingAngle, sectorPath } from "@/lib/wheel-layout";
+import {
+  EMPTY_ALT,
+  PRIZE_TABLE,
+  SECTORS,
+  TIER_STYLE,
+  landingAngle,
+  sectorPath,
+  styleFor,
+} from "@/lib/wheel-layout";
 import { mult as fmtMult } from "@/lib/format";
+import { sfx } from "@/lib/sound";
 
 interface SpinResponse {
   roundId: string;
@@ -38,8 +47,30 @@ export function WheelGame({
   const [history, setHistory] = useState<{ mult: number; tier: number }[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Çark dönerken yavaşlayan çıtçıt sesi — gerçek çarkın mandalı gibi.
+  useEffect(() => {
+    if (!spinning) return;
+    let stopped = false;
+    let t = 0;
+    const tickOnce = () => {
+      if (stopped) return;
+      sfx.tick();
+      t += 1;
+      // Aralık dönüş sonuna doğru açılır: hızlı başla, yavaşlayarak bit.
+      const progress = Math.min(1, (t * 70) / SPIN_MS);
+      const gap = 45 + Math.pow(progress, 3) * 320;
+      setTimeout(tickOnce, gap);
+    };
+    tickOnce();
+    return () => {
+      stopped = true;
+    };
+  }, [spinning]);
+
   async function spin() {
     if (spinning) return;
+    sfx.prime();
+    sfx.click();
     setError(null);
     setResult(null);
     setSpinning(true);
@@ -61,6 +92,11 @@ export function WheelGame({
         setSpinning(false);
         onSettled(res.balance);
         setHistory((h) => [{ mult: res.mult, tier: res.result.segment }, ...h].slice(0, 12));
+
+        if (res.payout > 0) sfx.win(res.mult);
+        else sfx.lose();
+        if (res.newBadges.length > 0) setTimeout(() => sfx.badge(), 500);
+
         void onReload();
       }, SPIN_MS);
     } catch (e) {
@@ -107,13 +143,30 @@ export function WheelGame({
                 transition: spinning ? `transform ${SPIN_MS}ms cubic-bezier(0.12, 0.7, 0.12, 1)` : "none",
               }}
             >
+              {/* Her ödül için bir degrade: göbekte koyu, kenarda parlak. */}
+              <defs>
+                {TIER_STYLE.map((t, i) => (
+                  <radialGradient key={i} id={`wg-${i}`} cx="0" cy="0" r={R} gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor={t.dark} />
+                    <stop offset="62%" stopColor={t.dark} />
+                    <stop offset="100%" stopColor={t.light} />
+                  </radialGradient>
+                ))}
+                <radialGradient id="wg-alt" cx="0" cy="0" r={R} gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor={EMPTY_ALT.dark} />
+                  <stop offset="62%" stopColor={EMPTY_ALT.dark} />
+                  <stop offset="100%" stopColor={EMPTY_ALT.light} />
+                </radialGradient>
+              </defs>
+
               {SECTORS.map((s, i) => (
                 <path
                   key={i}
                   d={sectorPath(s.start, s.angle, R)}
-                  fill={TIER_STYLE[s.tier]!.fill}
-                  stroke="#07120c"
-                  strokeWidth={0.6}
+                  fill={styleFor(s) === EMPTY_ALT ? "url(#wg-alt)" : `url(#wg-${s.tier})`}
+                  stroke="#ffd062"
+                  strokeOpacity={0.35}
+                  strokeWidth={0.5}
                 />
               ))}
 
@@ -132,7 +185,7 @@ export function WheelGame({
                     key={`t-${i}`}
                     x={tx}
                     y={ty}
-                    fill={TIER_STYLE[s.tier]!.text}
+                    fill={styleFor(s).text}
                     fontSize={s.angle > 16 ? 9 : 7}
                     fontWeight={800}
                     textAnchor="middle"
@@ -143,6 +196,26 @@ export function WheelGame({
                   </text>
                 );
               })}
+              {/* kazanan dilimin üstüne altın parlama */}
+              {result ? (
+                (() => {
+                  const target = landingAngle(result.result.segment, result.result.spinOffset);
+                  const won = SECTORS.find(
+                    (x) => target >= x.start && target < x.start + x.angle,
+                  );
+                  if (!won) return null;
+                  return (
+                    <path
+                      d={sectorPath(won.start, won.angle, R)}
+                      fill="#ffffff"
+                      opacity={0.22}
+                      stroke="#fff3cc"
+                      strokeWidth={1.4}
+                    />
+                  );
+                })()
+              ) : null}
+
               {/* iç altın halka ve perçinler */}
               <circle r={R} fill="none" stroke="#ffd062" strokeWidth={2} opacity={0.75} />
               <circle r={R * 0.34} fill="none" stroke="#ffd062" strokeWidth={1.2} opacity={0.45} />
@@ -206,7 +279,7 @@ export function WheelGame({
             <span
               key={i}
               className="tabular rounded-lg px-2 py-1 text-[11px] font-bold"
-              style={{ background: `${TIER_STYLE[h.tier]!.fill}`, color: TIER_STYLE[h.tier]!.text }}
+              style={{ background: TIER_STYLE[h.tier]!.light, color: TIER_STYLE[h.tier]!.text }}
             >
               {fmtMult(h.mult)}
             </span>
@@ -221,7 +294,7 @@ export function WheelGame({
             <li key={p.tier} className="flex items-center gap-3 text-sm">
               <span
                 className="size-3.5 shrink-0 rounded"
-                style={{ background: p.style.fill }}
+                style={{ background: p.style.light }}
                 aria-hidden
               />
               <span className="font-bold text-white/85">{p.label}</span>

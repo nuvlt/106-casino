@@ -13,9 +13,7 @@ Tam şartname: [`docs/SPEC.md`](docs/SPEC.md)
 - [x] Veritabanı şeması + migration (`src/db/`, `drizzle/`)
 - [x] Google girişi + domain kontrolü, ekonomi, cüzdan, `/api/me`
 - [x] Sekiz oyunun API uçları, rozetler, günlük görev ilerlemesi
-- [x] Ana sayfa (oyun ızgarası, sıralama, canlı akış, görevler)
-- [x] Şans Çarkı ve Crash arayüzleri
-- [ ] Kalan altı oyunun arayüzü
+- [ ] Oyun arayüzleri ve ana sayfa
 - [ ] Backoffice + provably fair doğrulama sayfası
 - [ ] Deploy (Vercel + Railway)
 
@@ -69,7 +67,6 @@ npm run typecheck         # tip kontrolü
 
 npm test                  # cüzdan + ekonomi testleri (gömülü Postgres, 19 kontrol)
 npm run test:games        # oyun akışı testleri (30 kontrol)
-npm run test:stale        # yarım kalmış Crash turları (7 kontrol)
 npm run test:all          # hepsi
 npm run verify:migration  # migration'ı gerçekten çalıştırıp doğrula
 npm run sim               # RTP Monte Carlo doğrulaması (32 yapılandırma)

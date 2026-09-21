@@ -151,12 +151,6 @@ Tüm ödeme tabloları `src/lib/games/config.ts` içinde, tam sayı "yüzde birl
 
 Ağırlıklar 10.000 üzerinden. `Σ(ağırlık × çarpan) = 9.500` → tam %95.
 
-**Görsel not:** çark dilimleri gerçek olasılıkla **orantılı** çizilir.
-Bunun sonucu, 50x diliminin binde 2 olduğu için kıl kadar ince görünmesi.
-Bu bir çizim hatası değil; dilimleri "görünür olsun diye" genişletmek,
-provably fair bir oyunda oyuncuya yanlış bir olasılık hissi verirdi.
-Ödül tablosu her dilimin tam yüzdesini ayrıca listeler.
-
 | Çarpan | 0x | 0.5x | 1x | 2x | 5x | 10x | 50x |
 |---|---|---|---|---|---|---|---|
 | Olasılık | %38,80 | %26,00 | %18,00 | %12,00 | %4,00 | %1,00 | %0,20 |
@@ -427,18 +421,8 @@ gerçek transaction, gerçek kısıtlar.
 kendisi hesaplar ve `crashPoint` ile karşılaştırır. İstemcinin gönderdiği
 çarpan yok sayılır. Ağ gecikmesi için 150 ms tolerans tanınır.
 
-**Yarım kalan turlar.** Oyuncu uçuş sırasında sekmeyi kapatırsa tur `OPEN`
-kalır ve "aynı anda tek tur" kuralı yüzünden oyuncu hiçbir oyunu oynayamaz
-hale gelir. Daha kötüsü, otomatik çekim hedefine ulaşmış bir tur ödenmeden
-bekler.
-
-Bu yüzden her bahis denemesinde ve her `/api/me` çağrısında, sonucu ARTIK
-KESİNLEŞMİŞ Crash turları sunucuda kapatılır (`lib/crash.ts`): çöküşü
-geçmiş olanlar kayıp, hedefine ulaşmış otomatik çekimler ise **kazanç**
-olarak. Uçuşu süren turlara dokunulmaz; onlar için arayüzde "devam eden
-turun var" uyarısı çıkar ve ilgili oyuna bağlantı verilir.
-
-Süresi geçmiş turlar ayrıca `expiresAt` sonrası cron ile kapatılır.
+`OPEN` kalan turlar (sekme kapandı, tarayıcı çöktü) `expiresAt` sonrası
+cron ile kaybedilmiş olarak kapatılır.
 
 ### 7.6 Denetlenebilirlik
 
@@ -488,6 +472,21 @@ GET  /api/admin/reconcile        bakiye ↔ ledger mutabakatı
 - **Sağlık** — günlük sıfırlama cron'u çalıştı mı, açık kalan tur var mı.
 
 ---
+
+## 9.1 Ses
+
+Ses **dosyası yok** — efektler Web Audio ile anlık sentezleniyor
+(`src/lib/sound.ts`). Sebepleri: indirilecek varlık olmaması (sayfa
+hafif kalıyor), çevrimdışı çalışması, ve çarpana göre tonu değişen
+kazanç sesi gibi şeylerin dosyayla mümkün olmaması.
+
+Tarayıcılar ses bağlamını ancak bir kullanıcı hareketinden sonra
+başlatmaya izin verdiği için bağlam ilk dokunuşta kurulur. Üst
+şeritteki hoparlör düğmesi sesi kapatır; tercih tarayıcıda saklanır.
+
+Efektler: jeton tıkı, çark mandalı (dönüş sonuna doğru yavaşlayan
+çıtçıt), kazanç arpeji (çarpan büyüdükçe daha çok nota), kayıp,
+roket kalkışı, patlama, çekim zili ve rozet fanfarı.
 
 ## 10. Teknik yığın ve dağıtım
 
@@ -539,9 +538,6 @@ TZ=Europe/Istanbul
 ## 11. Sürüm planı
 
 **Tamamlananlar**
-Ana sayfa (oyun ızgarası, sıralama tablosu, canlı kazanç şeridi, günlük
-görevler, rozetler, adalet kartı), Şans Çarkı ve Crash arayüzleri.
-
 Oyun matematiği (doğrulanmış), provably fair RNG, veritabanı şeması ve
 migration, Google girişi + domain kontrolü, ekonomi (günlük hak/seri/görev),
 cüzdan ve güvenlik katmanı, rozetler, görev ilerlemesi, `/api/me`,

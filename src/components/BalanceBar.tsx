@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { coins } from "@/lib/format";
+import { SoundToggle } from "@/components/SoundToggle";
 
 /** Üst şerit: altın jeton görünümlü bakiye, seri ve geri dönüş. Her ekranda sabit. */
 export function BalanceBar({
@@ -42,6 +43,7 @@ export function BalanceBar({
         ) : null}
 
         <div className="ml-auto flex items-center gap-2">
+          <SoundToggle />
           {streakDay ? (
             <span className="rounded-full bg-ruby/20 px-2.5 py-1 text-[11px] font-black text-[#ffb3be] ring-1 ring-ruby/40">
               🔥 {streakDay}

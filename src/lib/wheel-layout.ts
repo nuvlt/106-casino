@@ -15,18 +15,43 @@ import { WHEEL_SEGMENTS } from "@/lib/games/config";
 /** Dilim sırası: tier indeksleri, çark çevresinde dolaşarak. */
 const ORDER = [0, 1, 2, 0, 3, 1, 2, 0, 4, 1, 2, 0, 3, 1, 5, 0, 2, 1, 3, 0, 4, 1, 2, 6];
 
-export const TIER_STYLE: { fill: string; text: string }[] = [
-  { fill: "#22324d", text: "#8ea3c4" }, // 0x
-  { fill: "#0f5132", text: "#c8f5dc" }, // 0.5x
-  { fill: "#1b7a43", text: "#ffffff" }, // 1x
-  { fill: "#2d7dd2", text: "#ffffff" }, // 2x
-  { fill: "#7c3aed", text: "#ffffff" }, // 5x
-  { fill: "#d62828", text: "#ffffff" }, // 10x
-  { fill: "#f5b921", text: "#3a2500" }, // 50x
+/**
+ * Dilim renkleri — klasik casino paleti.
+ *
+ * Her ödülün iki tonu var: dilimin dış kenarı açık, göbeğe doğru koyu.
+ * Bu, düz renkli pastadan çok gerçek bir çarkın cilalı yüzeyine benziyor.
+ * "Boş" dilimler iki ayrı koyu tonda dönüşümlü boyanır ki çarkın en geniş
+ * bölgesi tek bir blok gibi durmasın.
+ */
+export interface TierStyle {
+  /** Dış kenar (parlak) */
+  light: string;
+  /** Göbek (koyu) */
+  dark: string;
+  text: string;
+}
+
+export const TIER_STYLE: TierStyle[] = [
+  { light: "#2a3550", dark: "#0e1524", text: "#93a6c7" }, // 0x — antrasit
+  { light: "#1f8b4c", dark: "#08351f", text: "#eafff2" }, // 0.5x — zümrüt
+  { light: "#2f80ed", dark: "#0d3470", text: "#eaf4ff" }, // 1x — safir
+  { light: "#9d5cff", dark: "#3b1470", text: "#f6efff" }, // 2x — ametist
+  { light: "#e01e37", dark: "#6b0b18", text: "#ffeef0" }, // 5x — yakut
+  { light: "#ff8c1a", dark: "#8a3c00", text: "#fff6ea" }, // 10x — turuncu
+  { light: "#ffd062", dark: "#a9760a", text: "#3a2500" }, // 50x — altın
 ];
+
+/** "Boş" dilimlerinin ikinci, biraz daha sıcak tonu (dönüşümlü kullanılır). */
+export const EMPTY_ALT: TierStyle = {
+  light: "#3a2f3f",
+  dark: "#16101a",
+  text: "#a795ad",
+};
 
 export interface Sector {
   tier: number;
+  /** Aynı ödülün kaçıncı kopyası — "Boş" dilimlerini dönüşümlü tonlamak için. */
+  copy: number;
   /** Tepedeki okla hizalı 0° noktasından saat yönünde başlangıç açısı. */
   start: number;
   angle: number;
@@ -40,15 +65,21 @@ const counts = ORDER.reduce<Record<number, number>>((acc, t) => {
 
 export const SECTORS: Sector[] = (() => {
   const totalWeight = WHEEL_SEGMENTS.reduce((s, x) => s + x.weight, 0);
+  const seen: Record<number, number> = {};
   let cursor = 0;
   return ORDER.map((tier) => {
     const seg = WHEEL_SEGMENTS[tier]!;
     const angle = (seg.weight / counts[tier]! / totalWeight) * 360;
-    const sector: Sector = { tier, start: cursor, angle, label: seg.label };
+    const copy = (seen[tier] = (seen[tier] ?? -1) + 1);
+    const sector: Sector = { tier, copy, start: cursor, angle, label: seg.label };
     cursor += angle;
     return sector;
   });
 })();
+
+/** Dilimin çizimde kullanılacak tonu. "Boş" dilimleri dönüşümlü tonlanır. */
+export const styleFor = (s: Sector): TierStyle =>
+  s.tier === 0 && s.copy % 2 === 1 ? EMPTY_ALT : TIER_STYLE[s.tier]!;
 
 /** Bir tier'ın kaçıncı kopyası olduğunu bulmak için indeks listesi. */
 const SECTORS_BY_TIER: Record<number, number[]> = SECTORS.reduce<Record<number, number[]>>(
