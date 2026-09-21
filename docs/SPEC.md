@@ -488,6 +488,41 @@ Efektler: jeton tıkı, çark mandalı (dönüş sonuna doğru yavaşlayan
 çıtçıt), kazanç arpeji (çarpan büyüdükçe daha çok nota), kayıp,
 roket kalkışı, patlama, çekim zili ve rozet fanfarı.
 
+## 9.2 Sonuç gösterimi — ölçüt net kârdır
+
+Oyuncuya basılan büyük rakam **net sonuçtur**, ödeme değil. Tek kaynak
+`src/lib/outcome.ts`; sekiz oyun da oradan geçer.
+
+Bu ayrımın sebebi gerçek bir hatadır. Ekran önce "ödeme > 0 ise yeşil +"
+mantığını kullanıyordu. 50 coin yatırıp 0,5x alan oyuncu 25 coin geri
+alır — ekranda **yeşil "+25"** görünüyordu, oysa oyuncu **25 coin
+kaybetmişti**. Plinko'nun 0,39x kovaları, Gizemli Kutular'ın 0,5x
+kutuları, Hilo'nun ilk adımdaki 0,95x'i ve Zar'ın %95 şanstaki 1x'i hep
+bu tuzağa düşüyordu.
+
+| Durum | Başlık | Renk |
+|---|---|---|
+| ödeme > bahis | `+net kâr` | yeşil |
+| ödeme = bahis | `±0` | nötr |
+| 0 < ödeme < bahis | `−net zarar` | kırmızı |
+| ödeme = 0 | `−bahis` | kırmızı |
+
+Her durumda alt satır çarpanı ve geri gelen tutarı yazar, yani oyuncu
+hem net sonucu hem de kasadan ne döndüğünü görür. Kazanç sesi de aynı
+ölçüte bağlandı — bahsin altındaki bir ödemede kazanç sesi çalmaz.
+
+`scripts/test-outcome.mts` bu sınıflandırmayı sınır durumlarıyla
+birlikte (±1 centicoin) doğrular.
+
+### Kazı Kazan'da bakiye gecikmesi
+
+Kazı Kazan'ın sonucu kart alınırken sunucuda belirlenir; kazıma yalnızca
+gösterimdir. Ödeme kart alınır alınmaz üst şeritteki bakiyeye yazılınca
+oyuncu **daha hiçbir hücreyi kazımadan** kazandığını görüyordu. Artık
+satın alma anında yalnızca bahis düşülür; ödeme ve rozet ödülleri kart
+tamamen açılana kadar gösterimden saklanır. Sunucu tarafında değişen bir
+şey yok — tur yine tek işlemde kapanıyor, saklanan yalnızca gösterimdir.
+
 ## 10. Teknik yığın ve dağıtım
 
 | Katman | Seçim |

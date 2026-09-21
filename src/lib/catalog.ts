@@ -49,7 +49,7 @@ export const GAMES: readonly GameMeta[] = [
     emoji: "🎲",
     volatility: "düşük",
     maxWin: "95x",
-    ready: false,
+    ready: true,
   },
   {
     slug: "plinko",
@@ -60,7 +60,7 @@ export const GAMES: readonly GameMeta[] = [
     emoji: "🔻",
     volatility: "yüksek",
     maxWin: "271x",
-    ready: false,
+    ready: true,
   },
   {
     slug: "scratch",
@@ -71,7 +71,7 @@ export const GAMES: readonly GameMeta[] = [
     emoji: "🎫",
     volatility: "orta",
     maxWin: "100x",
-    ready: false,
+    ready: true,
   },
   {
     slug: "guess",
@@ -82,7 +82,7 @@ export const GAMES: readonly GameMeta[] = [
     emoji: "🔢",
     volatility: "orta",
     maxWin: "9,5x",
-    ready: false,
+    ready: true,
   },
   {
     slug: "mystery",
@@ -93,7 +93,7 @@ export const GAMES: readonly GameMeta[] = [
     emoji: "🎁",
     volatility: "yüksek",
     maxWin: "500x",
-    ready: false,
+    ready: true,
   },
   {
     slug: "hilo",
@@ -104,7 +104,7 @@ export const GAMES: readonly GameMeta[] = [
     emoji: "🃏",
     volatility: "orta",
     maxWin: "zincire bağlı",
-    ready: false,
+    ready: true,
   },
 ];
 

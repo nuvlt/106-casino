@@ -42,7 +42,7 @@ export function WheelGame({
   const [bet, setBet] = useState(50 * COIN);
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [result, setResult] = useState<SpinResponse | null>(null);
+  const [result, setResult] = useState<(SpinResponse & { stake: number }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<{ mult: number; tier: number }[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,12 +88,12 @@ export function WheelGame({
       setRotation((r) => r + 360 * 5 + delta);
 
       timer.current = setTimeout(() => {
-        setResult(res);
+        setResult({ ...res, stake: bet });
         setSpinning(false);
         onSettled(res.balance);
         setHistory((h) => [{ mult: res.mult, tier: res.result.segment }, ...h].slice(0, 12));
 
-        if (res.payout > 0) sfx.win(res.mult);
+        if (res.payout > bet) sfx.win(res.mult);
         else sfx.lose();
         if (res.newBadges.length > 0) setTimeout(() => sfx.badge(), 500);
 
@@ -254,7 +254,12 @@ export function WheelGame({
             {error}
           </p>
         ) : result ? (
-          <ResultFlash payout={result.payout} mult={result.mult} badges={result.newBadges} />
+          <ResultFlash
+            payout={result.payout}
+            stake={result.stake}
+            mult={result.mult}
+            badges={result.newBadges}
+          />
         ) : spinning ? (
           <p className="animate-pulse text-sm text-muted">çark dönüyor…</p>
         ) : (
