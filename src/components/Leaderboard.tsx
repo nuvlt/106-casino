@@ -21,7 +21,12 @@ const TABS = [
   { scope: "wagered", label: "Çevrim" },
 ] as const;
 
-const MEDALS = ["🥇", "🥈", "🥉"];
+/** İlk üçün kürsüsü — madalya rengi, halka ve taç. */
+const PODIUM = [
+  { ring: "ring-[#ffd062]", glow: "shadow-[0_0_20px_rgba(255,208,98,0.45)]", medal: "🥇", h: "h-[74px]" },
+  { ring: "ring-[#d7dce6]", glow: "shadow-[0_0_14px_rgba(215,220,230,0.3)]", medal: "🥈", h: "h-[58px]" },
+  { ring: "ring-[#d08a4a]", glow: "shadow-[0_0_14px_rgba(208,138,74,0.3)]", medal: "🥉", h: "h-[46px]" },
+];
 
 export function Leaderboard() {
   const [scope, setScope] = useState<(typeof TABS)[number]["scope"]>("season");
@@ -29,6 +34,10 @@ export function Leaderboard() {
     `/api/leaderboard?scope=${scope}`,
     { refreshMs: 20_000 },
   );
+
+  const top = data?.entries.slice(0, 3) ?? [];
+  const rest = data?.entries.slice(3) ?? [];
+  const fmt = (v: number) => (data?.unit === "mult" ? multX4(v) : coinsShort(v));
 
   return (
     <Card>
@@ -39,10 +48,10 @@ export function Leaderboard() {
           <button
             key={t.scope}
             onClick={() => setScope(t.scope)}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-black transition ${
               scope === t.scope
-                ? "bg-gold text-[#3a2500]"
-                : "bg-white/6 text-white/60 active:bg-white/10"
+                ? "gold-metal text-[#3a2500] shadow-[0_2px_0_#7a5804]"
+                : "bg-white/6 text-white/60 ring-1 ring-white/10 active:bg-white/12"
             }`}
           >
             {t.label}
@@ -61,33 +70,65 @@ export function Leaderboard() {
           Tablo henüz boş. İlk turu oyna, zirveye adını yaz.
         </p>
       ) : (
-        <ol className="space-y-1.5">
-          {data!.entries.map((e) => (
-            <li
-              key={e.userId}
-              className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${
-                e.isMe
-                  ? "border border-gold/35 bg-gold/10"
-                  : "bg-white/4"
-              }`}
-            >
-              <span className="tabular w-7 shrink-0 text-center font-display text-sm font-black text-white/50">
-                {MEDALS[e.rank - 1] ?? e.rank}
-              </span>
-              <Avatar name={initials(e.name)} size={32} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-white/90">
-                  {shortName(e.name)}
-                  {e.isMe ? <span className="ml-1.5 text-[11px] text-gold">sen</span> : null}
-                </div>
-                <div className="text-[11px] text-muted">{e.rounds} tur</div>
-              </div>
-              <div className="tabular font-display text-sm font-extrabold text-gold">
-                {data!.unit === "mult" ? multX4(e.value) : coinsShort(e.value)}
-              </div>
-            </li>
-          ))}
-        </ol>
+        <>
+          {/* kürsü */}
+          {top.length > 0 ? (
+            <div className="mb-3 flex items-end justify-center gap-2.5">
+              {[1, 0, 2].map((idx) => {
+                const e = top[idx];
+                if (!e) return null;
+                const p = PODIUM[idx]!;
+                return (
+                  <div key={e.userId} className="flex w-1/3 flex-col items-center">
+                    <span className="mb-1 text-lg">{p.medal}</span>
+                    <div className={`rounded-full ring-2 ${p.ring} ${p.glow}`}>
+                      <Avatar name={initials(e.name)} size={idx === 0 ? 46 : 38} />
+                    </div>
+                    <span className="mt-1 max-w-full truncate text-[11px] font-bold text-white/85">
+                      {shortName(e.name)}
+                    </span>
+                    <span className="tabular text-[11px] font-black text-gold">{fmt(e.value)}</span>
+                    <div
+                      className={`gloss relative mt-1.5 grid w-full place-items-center overflow-hidden
+                        rounded-t-xl ${p.h} bg-gradient-to-b from-[#3a2b12] to-[#14100a]
+                        shadow-[inset_0_1px_0_rgba(255,201,74,0.45)] ring-1 ring-gold/30`}
+                    >
+                      <span className="gold-text font-display text-xl font-black">{idx + 1}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {rest.length > 0 ? (
+            <ol className="space-y-1.5">
+              {rest.map((e) => (
+                <li
+                  key={e.userId}
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 ${
+                    e.isMe ? "bg-gold/10 ring-1 ring-gold/40" : "bg-white/4"
+                  }`}
+                >
+                  <span className="tabular w-6 shrink-0 text-center font-display text-sm font-black text-white/45">
+                    {e.rank}
+                  </span>
+                  <Avatar name={initials(e.name)} size={30} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold text-white/90">
+                      {shortName(e.name)}
+                      {e.isMe ? <span className="ml-1.5 text-[11px] text-gold">sen</span> : null}
+                    </div>
+                    <div className="text-[11px] text-muted">{e.rounds} tur</div>
+                  </div>
+                  <div className="tabular font-display text-sm font-black text-gold">
+                    {fmt(e.value)}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </>
       )}
     </Card>
   );

@@ -2,29 +2,33 @@
 
 /*
  * 106 Casino — görsel dil
- * Derin lacivert zemin, kadife yeşili masa, altın vurgu, canlı çip renkleri.
- * Referans: klasik casino salonunun sıcak ve parlak paleti.
+ *
+ * Amaç: bir finans uygulaması değil, casino salonu hissi.
+ * Kadife yeşili masa, altın kaplama pirinç, sıcak spot ışığı, derin gölgeler.
+ * Renkler doygun; yüzeyler düz değil — her birinin üstünde ışık var.
  */
 @theme {
-  --color-ink: #070c17;
-  --color-bg: #0c1626;
-  --color-surface: #13223a;
-  --color-surface-2: #1b2f4d;
-  --color-edge: #2a4467;
+  --color-ink: #05070f;
+  --color-bg: #0a1420;
+  --color-surface: #132133;
+  --color-surface-2: #1c2f47;
+  --color-edge: #2c4466;
 
-  --color-gold: #f5b921;
-  --color-gold-deep: #c98a06;
-  --color-felt: #1b7a43;
-  --color-felt-deep: #0f5132;
-  --color-ruby: #d62828;
-  --color-chip: #2d7dd2;
-  --color-neon: #21d4fd;
-  --color-magenta: #ff2d95;
-  --color-violet: #8b5cf6;
+  --color-gold: #ffc94a;
+  --color-gold-deep: #b8860b;
+  --color-gold-dark: #7a5804;
+  --color-felt: #1f8b4c;
+  --color-felt-deep: #0b3d22;
+  --color-ruby: #e01e37;
+  --color-ruby-deep: #7a0d1d;
+  --color-chip: #2f80ed;
+  --color-neon: #2ee6ff;
+  --color-magenta: #ff3d9a;
+  --color-violet: #9d5cff;
 
-  --color-win: #23d18b;
-  --color-lose: #ff5470;
-  --color-muted: #8ea3c4;
+  --color-win: #2fe08a;
+  --color-lose: #ff5d78;
+  --color-muted: #94aac9;
 
   --font-display: ui-rounded, "SF Pro Rounded", "Segoe UI Rounded", system-ui, sans-serif;
 }
@@ -34,46 +38,149 @@ html {
 }
 
 body {
+  /* Kadife masa + tepeden spot ışığı + kenarlarda karartma */
   background:
-    radial-gradient(900px 500px at 15% -5%, #1d3a63 0%, transparent 55%),
-    radial-gradient(800px 500px at 85% 0%, #2a1a4d 0%, transparent 55%),
-    var(--color-bg);
+    radial-gradient(1000px 420px at 50% -8%, rgba(255, 201, 74, 0.18) 0%, transparent 62%),
+    radial-gradient(760px 520px at 8% 12%, rgba(157, 92, 255, 0.16) 0%, transparent 60%),
+    radial-gradient(900px 620px at 92% 18%, rgba(46, 230, 255, 0.12) 0%, transparent 60%),
+    radial-gradient(1200px 900px at 50% 108%, #124b2c 0%, transparent 58%),
+    linear-gradient(#0a1420, #05070f);
   background-attachment: fixed;
-  color: #eaf0fb;
+  color: #f2f6ff;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
 }
 
-/* Sayılar tabloda ve sayaçlarda zıplamasın. */
+/* Kumaş dokusu — çok hafif, sadece yüzeyin düz olmadığını hissettirir. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---------- ALTIN KAPLAMA ---------- */
+
+/* Pirinç/altın metal yüzey: üstte parlak, ortada koyu şerit, altta sıcak yansıma. */
+.gold-plate {
+  background:
+    linear-gradient(
+      180deg,
+      #fff1c0 0%,
+      #ffd464 18%,
+      #e2a621 44%,
+      #a9760a 58%,
+      #d9a13a 70%,
+      #f2c55c 82%,
+      #b5830e 100%
+    );
+}
+
+.gold-metal {
+  background: linear-gradient(
+    145deg,
+    #fff3cc 0%,
+    #ffd977 22%,
+    #d79f22 46%,
+    #8d6205 62%,
+    #e7b843 84%,
+    #a97d12 100%
+  );
+}
+
+.gold-text {
+  background: linear-gradient(180deg, #fff3cc 0%, #ffd062 45%, #c68d10 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* İnce altın kenar — kartların çevresine sıcak bir çizgi. */
+.gold-hairline {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 201, 74, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Yüzeyin üstünde cam parlaması. */
+.gloss::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 46%);
+}
+
+/* Altın yüzeyler üzerinde yavaşça gezen parlama. */
+.shine {
+  position: relative;
+  overflow: hidden;
+}
+.shine::before {
+  content: "";
+  position: absolute;
+  top: -60%;
+  bottom: -60%;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: skewX(-18deg);
+  animation: sweep 4.5s ease-in-out infinite;
+}
+@keyframes sweep {
+  0%, 62% { left: -60%; }
+  100% { left: 130%; }
+}
+
+/* ---------- ANİMASYONLAR ---------- */
+
 @keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.animate-rise { animation: rise 0.25s ease-out both; }
+.animate-rise { animation: rise 0.3s ease-out both; }
 
 @keyframes pop {
-  0% { transform: scale(0.85); opacity: 0; }
-  60% { transform: scale(1.06); opacity: 1; }
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
   100% { transform: scale(1); }
 }
-.animate-pop { animation: pop 0.35s cubic-bezier(.2,.9,.3,1.3) both; }
+.animate-pop { animation: pop 0.38s cubic-bezier(.2,.9,.3,1.4) both; }
 
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
-.animate-marquee { animation: marquee 32s linear infinite; }
+.animate-marquee { animation: marquee 34s linear infinite; }
 
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
+@keyframes floaty {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
 }
+.animate-floaty { animation: floaty 4s ease-in-out infinite; }
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.animate-glow { animation: pulse-glow 2.2s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-marquee, .animate-pop, .animate-rise { animation: none !important; }
+  .animate-marquee, .animate-pop, .animate-rise, .animate-floaty,
+  .animate-glow, .shine::before { animation: none !important; }
 }

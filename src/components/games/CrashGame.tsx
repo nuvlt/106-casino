@@ -31,6 +31,18 @@ type Phase = "idle" | "flying" | "done";
 /** Eğri: m(t) = e^(λt). Sunucu da aynı formülü kullanır. */
 const multAt = (lambda: number, seconds: number) => Math.exp(lambda * seconds);
 
+/** Arka plandaki yıldızlar — sabit tohumlu, her açılışta aynı gökyüzü. */
+const STARS = Array.from({ length: 46 }, (_, i) => {
+  const a = Math.sin(i * 12.9898) * 43758.5453;
+  const b = Math.sin(i * 78.233) * 12345.6789;
+  return {
+    x: ((a - Math.floor(a)) * 100).toFixed(2),
+    y: ((b - Math.floor(b)) * 100).toFixed(2),
+    r: i % 7 === 0 ? 0.55 : 0.32,
+    o: i % 5 === 0 ? 0.75 : 0.35,
+  };
+});
+
 export function CrashGame({
   balance,
   onSettled,
@@ -172,18 +184,29 @@ export function CrashGame({
     <div className="space-y-4">
       {/* --- UÇUŞ EKRANI --- */}
       <div
-        className={`relative aspect-[4/3] w-full overflow-hidden rounded-3xl border transition-colors duration-300 ${
+        className={`gold-hairline relative aspect-[4/3] w-full overflow-hidden rounded-3xl
+          shadow-[0_16px_44px_rgba(0,0,0,0.6)] transition-colors duration-500 ${
           crashed
-            ? "border-lose/40 bg-gradient-to-b from-[#3d0d18] to-[#120a12]"
+            ? "bg-[radial-gradient(130%_100%_at_50%_0%,#5e0f24_0%,#2a0713_45%,#0a0510_100%)]"
             : phase === "done" && outcome
-              ? "border-win/40 bg-gradient-to-b from-[#06331f] to-[#0a1420]"
-              : "border-white/10 bg-gradient-to-b from-[#0b3b5c] to-[#070c17]"
+              ? "bg-[radial-gradient(130%_100%_at_50%_0%,#0d5c38_0%,#07331f_45%,#04140f_100%)]"
+              : "bg-[radial-gradient(130%_100%_at_50%_0%,#123b6b_0%,#0a1d3c_45%,#050a16_100%)]"
         }`}
       >
+        {/* yıldızlar */}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full">
+          {STARS.map((s, i) => (
+            <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#ffffff" opacity={s.o} />
+          ))}
+        </svg>
+
         {/* ızgara */}
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full opacity-20">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full opacity-[0.13]">
           {[20, 40, 60, 80].map((y) => (
-            <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#ffffff" strokeWidth="0.3" />
+            <line key={`h${y}`} x1="0" y1={y} x2="100" y2={y} stroke="#ffffff" strokeWidth="0.3" />
+          ))}
+          {[20, 40, 60, 80].map((x) => (
+            <line key={`v${x}`} x1={x} y1="0" x2={x} y2="100" stroke="#ffffff" strokeWidth="0.3" />
           ))}
         </svg>
 
@@ -211,11 +234,37 @@ export function CrashGame({
           ) : null}
         </svg>
 
+        {/* eğrinin ucundaki roket — alev ve parlama ile */}
         {curveEnd && phase === "flying" ? (
           <div
-            className="pointer-events-none absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-neon shadow-[0_0_16px_6px_rgba(33,212,253,0.55)]"
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${curveEnd.x}%`, top: `${curveEnd.y}%` }}
-          />
+          >
+            <div className="absolute -inset-5 rounded-full bg-neon/35 blur-xl" />
+            <svg width="34" height="34" viewBox="-16 -16 32 32" className="relative rotate-45">
+              <defs>
+                <linearGradient id="rkt" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#fff3cc" />
+                  <stop offset="55%" stopColor="#ffd062" />
+                  <stop offset="100%" stopColor="#b5830e" />
+                </linearGradient>
+              </defs>
+              <path d="M0 -13 C6 -6 7 4 0 12 C-7 4 -6 -6 0 -13 Z" fill="url(#rkt)" />
+              <circle cx="0" cy="-3" r="3.2" fill="#0a1420" />
+              <path d="M-6 5 L-11 13 L-2 9 Z" fill="#e01e37" />
+              <path d="M6 5 L11 13 L2 9 Z" fill="#e01e37" />
+              <path d="M0 12 L-3.5 22 L0 18 L3.5 22 Z" fill="#ffb020" className="animate-glow" />
+            </svg>
+          </div>
+        ) : null}
+
+        {crashed ? (
+          <div
+            className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-4xl"
+            style={{ left: `${curveEnd?.x ?? 50}%`, top: `${curveEnd?.y ?? 50}%` }}
+          >
+            💥
+          </div>
         ) : null}
 
         {/* çarpan */}

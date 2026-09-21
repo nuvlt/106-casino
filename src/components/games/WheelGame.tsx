@@ -73,16 +73,32 @@ export function WheelGame({
     <div className="space-y-4">
       {/* --- ÇARK --- */}
       <div className="relative mx-auto aspect-square w-full max-w-[340px]">
-        {/* tepe işaretçisi */}
-        <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1">
-          <div
-            className="size-0 border-x-[11px] border-t-[20px] border-x-transparent border-t-gold
-                       drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
-          />
+        {/* arkadan sıcak ışık */}
+        <div
+          className={`pointer-events-none absolute -inset-6 rounded-full bg-gold/25 blur-3xl transition-opacity duration-700 ${
+            spinning ? "opacity-90" : "opacity-40"
+          }`}
+        />
+
+        {/* tepe işaretçisi — pirinç ok, ucunda yakut */}
+        <div className="absolute left-1/2 top-[-6px] z-20 -translate-x-1/2">
+          <svg width="30" height="36" viewBox="0 0 30 36" className="drop-shadow-[0_3px_6px_rgba(0,0,0,0.7)]">
+            <defs>
+              <linearGradient id="ptrG" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fff3cc" />
+                <stop offset="50%" stopColor="#ffd062" />
+                <stop offset="100%" stopColor="#a9760a" />
+              </linearGradient>
+            </defs>
+            <circle cx="15" cy="9" r="8" fill="url(#ptrG)" />
+            <circle cx="15" cy="9" r="3.4" fill="#e01e37" />
+            <path d="M6 14 L24 14 L15 34 Z" fill="url(#ptrG)" />
+          </svg>
         </div>
 
-        <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#f7d774] to-[#9a6c05] p-[6px] shadow-[0_18px_50px_rgba(0,0,0,0.55)]">
-          <div className="relative size-full overflow-hidden rounded-full bg-[#0b1220]">
+        {/* dış pirinç çember + perçinler */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#fff0bf] via-[#d9a13a] to-[#8d6205] p-[9px] shadow-[0_22px_60px_rgba(0,0,0,0.65)]">
+          <div className="relative size-full overflow-hidden rounded-full bg-[#07120c] shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
             <svg
               viewBox="-105 -105 210 210"
               className="size-full"
@@ -96,7 +112,7 @@ export function WheelGame({
                   key={i}
                   d={sectorPath(s.start, s.angle, R)}
                   fill={TIER_STYLE[s.tier]!.fill}
-                  stroke="#0b1220"
+                  stroke="#07120c"
                   strokeWidth={0.6}
                 />
               ))}
@@ -107,28 +123,52 @@ export function WheelGame({
                 const mid = s.start + s.angle / 2;
                 const rad = ((mid - 90) * Math.PI) / 180;
                 const rr = R * 0.7;
+                // Koordinatlar yuvarlanmadan basılırsa sunucu ve tarayıcının
+                // Math.cos sonuçları son bitte ayrışıp hydration uyarısı üretir.
+                const tx = Number((rr * Math.cos(rad)).toFixed(3));
+                const ty = Number((rr * Math.sin(rad)).toFixed(3));
                 return (
                   <text
                     key={`t-${i}`}
-                    x={rr * Math.cos(rad)}
-                    y={rr * Math.sin(rad)}
+                    x={tx}
+                    y={ty}
                     fill={TIER_STYLE[s.tier]!.text}
                     fontSize={s.angle > 16 ? 9 : 7}
                     fontWeight={800}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    transform={`rotate(${mid} ${rr * Math.cos(rad)} ${rr * Math.sin(rad)})`}
+                    transform={`rotate(${mid.toFixed(3)} ${tx} ${ty})`}
                   >
                     {s.label}
                   </text>
                 );
               })}
-              <circle r={R} fill="none" stroke="#f5b921" strokeWidth={1.5} opacity={0.5} />
+              {/* iç altın halka ve perçinler */}
+              <circle r={R} fill="none" stroke="#ffd062" strokeWidth={2} opacity={0.75} />
+              <circle r={R * 0.34} fill="none" stroke="#ffd062" strokeWidth={1.2} opacity={0.45} />
+              {Array.from({ length: 24 }, (_, i) => {
+                const a = ((i * 15 - 90) * Math.PI) / 180;
+                return (
+                  <circle
+                    key={`rivet-${i}`}
+                    cx={Number((R * 0.93 * Math.cos(a)).toFixed(3))}
+                    cy={Number((R * 0.93 * Math.sin(a)).toFixed(3))}
+                    r={1.5}
+                    fill="#fff3cc"
+                    opacity={0.85}
+                  />
+                );
+              })}
             </svg>
 
+            {/* cam yansıması — çarkın üstünde sabit durur, dönmez */}
+            <div className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(200deg,rgba(255,255,255,0.22)_0%,transparent_38%)]" />
+
             {/* göbek */}
-            <div className="absolute left-1/2 top-1/2 grid size-[26%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-b from-[#f7d774] to-[#9a6c05] shadow-inner">
-              <span className="font-display text-[11px] font-black text-[#3a2500]">106</span>
+            <div className="absolute left-1/2 top-1/2 grid size-[27%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-b from-[#fff3cc] via-[#ffd062] to-[#8d6205] shadow-[0_6px_16px_rgba(0,0,0,0.6),inset_0_2px_6px_rgba(255,255,255,0.6)]">
+              <div className="grid size-[76%] place-items-center rounded-full bg-gradient-to-b from-[#1a3325] to-[#07120c] ring-1 ring-[#ffd062]/50">
+                <span className="gold-text font-display text-[13px] font-black">106</span>
+              </div>
             </div>
           </div>
         </div>

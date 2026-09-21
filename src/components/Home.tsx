@@ -2,13 +2,13 @@
 
 import { BalanceBar } from "@/components/BalanceBar";
 import { GameGrid } from "@/components/GameGrid";
+import { Hero } from "@/components/Hero";
 import { Leaderboard } from "@/components/Leaderboard";
 import { LiveFeed } from "@/components/LiveFeed";
 import { Missions } from "@/components/Missions";
 import { OpenRoundBanner } from "@/components/OpenRoundBanner";
-import { Card, Pill, SectionTitle, Skeleton } from "@/components/ui";
+import { Card, SectionTitle, Skeleton } from "@/components/ui";
 import { useMe } from "@/hooks/useMe";
-import { coins } from "@/lib/format";
 
 export function Home() {
   const { data: me, loading } = useMe(30_000);
@@ -20,35 +20,7 @@ export function Home() {
       <LiveFeed />
       <OpenRoundBanner round={me?.openRound ?? null} />
 
-      {/* Günlük hak kartı — sabah ilk girişte bakiye burada sıfırlanır. */}
-      {loading && !me ? (
-        <Skeleton className="mb-4 h-24" />
-      ) : me ? (
-        <Card className="mb-4 !bg-gradient-to-br !from-[#2a1a4d] !to-[#13223a]">
-          <div className="flex items-center gap-4">
-            <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gold/15 text-3xl">
-              🪙
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-2xl font-black tabular text-gold">
-                {coins(me.wallet.balance)}
-              </div>
-              <p className="text-xs text-muted">
-                Bugünün hakkı verildi · her gece 1.000 coin&apos;e sıfırlanır
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Pill tone="gold">🔥 {me.streak.day}. gün</Pill>
-            {me.streak.nextBonus > 0 ? (
-              <Pill tone="info">yarın +{coins(me.streak.nextBonus)} bonus</Pill>
-            ) : null}
-            {me.stats.roundsPlayed > 0 ? (
-              <Pill>zirve {coins(me.stats.peakBalance)}</Pill>
-            ) : null}
-          </div>
-        </Card>
-      ) : null}
+      {loading && !me ? <Skeleton className="mb-4 h-32" /> : me ? <Hero me={me} /> : null}
 
       <section className="mb-4">
         <SectionTitle right="8 oyun">Oyunlar</SectionTitle>
@@ -68,10 +40,11 @@ export function Home() {
                   <div
                     key={b.id}
                     title={b.description}
-                    className="flex items-center gap-2 rounded-2xl bg-white/5 px-3 py-2"
+                    className="flex items-center gap-2 rounded-2xl bg-gradient-to-b from-white/10 to-white/4
+                               px-3 py-2 ring-1 ring-gold/25"
                   >
-                    <span className="text-lg">{b.icon}</span>
-                    <span className="text-xs font-bold text-white/85">{b.title}</span>
+                    <span className="text-lg drop-shadow">{b.icon}</span>
+                    <span className="text-xs font-black text-white/90">{b.title}</span>
                   </div>
                 ))}
               </div>
@@ -81,11 +54,11 @@ export function Home() {
           <Card>
             <SectionTitle right="provably fair">Adalet</SectionTitle>
             <p className="mb-2 text-xs leading-relaxed text-muted">
-              Her turun sonucu, bahisten <strong className="text-white/80">önce</strong> yayınlanan
+              Her turun sonucu, bahisten <strong className="text-white/85">önce</strong> yayınlanan
               bir sunucu tohumundan üretilir. Tohumu döndürdüğünde eskisi açılır ve geçmiş
               turlarının tamamını kendin hesaplayabilirsin.
             </p>
-            <div className="tabular space-y-1 rounded-2xl bg-black/25 p-3 text-[11px]">
+            <div className="tabular space-y-1 rounded-2xl bg-black/35 p-3 text-[11px] ring-1 ring-white/6">
               <div className="flex gap-2">
                 <span className="w-24 shrink-0 text-muted">sunucu hash</span>
                 <span className="truncate text-white/70">{me.fairness.serverSeedHash}</span>
