@@ -15,10 +15,11 @@
     "calibrate": "tsx scripts/calibrate-plinko.ts",
     "test": "tsx scripts/test-wallet.mts",
     "test:games": "tsx scripts/test-games.mts",
-    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run verify:migration",
+    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run verify:migration",
     "test:stale": "tsx scripts/test-stale.mts",
     "test:crash": "tsx scripts/test-crash-poll.mts",
-    "test:outcome": "tsx scripts/test-outcome.mts"
+    "test:outcome": "tsx scripts/test-outcome.mts",
+    "test:missions": "tsx scripts/test-missions.mts"
   },
   "license": "ISC",
   "devDependencies": {

@@ -488,6 +488,56 @@ Efektler: jeton tıkı, çark mandalı (dönüş sonuna doğru yavaşlayan
 çıtçıt), kazanç arpeji (çarpan büyüdükçe daha çok nota), kayıp,
 roket kalkışı, patlama, çekim zili ve rozet fanfarı.
 
+## 9.0 Görev ödülleri — alınır, kendiliğinden yatmaz
+
+Tamamlanan görevin ödülü otomatik ödenmez; oyuncu "Ödülü al" düğmesine
+basar. Sebep basit: otomatik yatan ödül bir arka plan işidir, oyuncu onu
+hiç görmez. Basınca bakiyenin zıpladığını görmek görevi tamamlamanın
+karşılığını hissettiriyor.
+
+İki güvenlik kuralı (`src/lib/mission-claim.ts`):
+
+1. **Tutar istemciden gelmez.** İstek yalnızca hangi görev olduğunu
+   söyler; ödül `mission` tablosundaki tanımdan okunur.
+
+2. **Satır (kullanıcı, görev) çiftiyle aranır.** İstemci bir satır
+   kimliği göndermiyor, dolayısıyla "başkasının satırını iste" diye bir
+   saldırı yüzeyi yok — sorgu zaten yalnızca isteği yapanın satırına
+   bakabiliyor. Aynı gün herkes aynı görev TANIMLARINI paylaşır; başkası
+   görevi bitirmiş olsa bile kendi satırın tamamlanmamışsa eli boş
+   dönersin.
+
+Çift ödemeye karşı koşullu UPDATE kullanılıyor — `claimed_at` yalnızca
+hâlâ NULL ise yazılır:
+
+```sql
+UPDATE user_mission SET claimed_at = now()
+WHERE user_id = ? AND mission_id = ?
+  AND completed_at IS NOT NULL AND claimed_at IS NULL
+RETURNING id, mission_id
+```
+
+Dönen satır yoksa ödeme yapılmaz. Bu, cüzdandaki
+`WHERE balance >= amount` kalıbının aynısı: kontrol ile yazma arasında
+başka bir isteğin sızabileceği bir aralık bırakmıyor.
+`scripts/test-missions.mts` iki isteği `Promise.allSettled` ile aynı
+anda göndererek yalnızca birinin başarılı olduğunu ve bakiyenin tek ödül
+kadar arttığını doğruluyor.
+
+Ödül `MISSION_REWARD` olarak deftere yazılır, yani ledger toplamı
+bakiyeyle tutmaya devam eder.
+
+## 9.0b Rozet ve sıralama sayfaları
+
+- `/rozetler` — sekiz rozetin tamamı. Kazanılanlar altın çerçeveli ve
+  kazanılma zamanıyla; kilitliler soluk, kademe etiketiyle (kolay/orta/
+  zor) ve ödül tutarıyla. Kilitli olanları da göstermek bilinçli: hedefi
+  görmek onu kovalamayı sağlıyor.
+- `/siralama` — dört sekmeli tablo (zirve/bugün/çarpan/çevrim) ve
+  "Karnen" kartı: zirve bakiye, en büyük kazanç, en büyük çarpan,
+  oynanan tur, toplam çevrim, en uzun giriş serisi. Sayfanın altında
+  sıralamanın neden zirve bakiyeye göre yapıldığı yazıyor.
+
 ## 9.2 Sonuç gösterimi — ölçüt net kârdır
 
 Oyuncuya basılan büyük rakam **net sonuçtur**, ödeme değil. Tek kaynak

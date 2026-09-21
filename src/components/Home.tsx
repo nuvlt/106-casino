@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BalanceBar } from "@/components/BalanceBar";
 import { GameGrid } from "@/components/GameGrid";
 import { Hero } from "@/components/Hero";
@@ -11,7 +12,13 @@ import { Card, SectionTitle, Skeleton } from "@/components/ui";
 import { useMe } from "@/hooks/useMe";
 
 export function Home() {
-  const { data: me, loading } = useMe(30_000);
+  const { data: me, loading, setData, reload } = useMe(30_000);
+
+  /** Görev ödülü alınınca üst şeritteki bakiye hemen güncellensin. */
+  const onClaimed = (balance: number) => {
+    setData((prev) => (prev ? { ...prev, wallet: { ...prev.wallet, balance } } : prev));
+    void reload();
+  };
 
   return (
     <main className="mx-auto max-w-lg px-4 pb-16">
@@ -29,13 +36,21 @@ export function Home() {
 
       {me ? (
         <div className="space-y-4">
-          <Missions missions={me.missions} />
-          <Leaderboard />
+          <Missions missions={me.missions} onClaimed={onClaimed} />
 
-          {me.badges.length > 0 ? (
-            <Card>
-              <SectionTitle right={`${me.badges.length} rozet`}>Başarımların</SectionTitle>
-              <div className="flex flex-wrap gap-2">
+          <Leaderboard />
+          <Link
+            href="/siralama"
+            className="-mt-1 block rounded-2xl bg-white/6 py-2.5 text-center text-xs font-black
+                       text-white/70 ring-1 ring-white/10 transition active:bg-white/12"
+          >
+            Tüm sıralama ve karnen →
+          </Link>
+
+          <Card>
+            <SectionTitle right={`${me.badges.length} rozet`}>Başarımların</SectionTitle>
+            {me.badges.length > 0 ? (
+              <div className="mb-2.5 flex flex-wrap gap-2">
                 {me.badges.map((b) => (
                   <div
                     key={b.id}
@@ -48,8 +63,19 @@ export function Home() {
                   </div>
                 ))}
               </div>
-            </Card>
-          ) : null}
+            ) : (
+              <p className="mb-2.5 text-xs text-muted">
+                Henüz rozetin yok — ilk turunu oynadığında ilki gelir.
+              </p>
+            )}
+            <Link
+              href="/rozetler"
+              className="block rounded-2xl bg-white/6 py-2.5 text-center text-xs font-black
+                         text-white/70 ring-1 ring-white/10 transition active:bg-white/12"
+            >
+              Bütün rozetleri gör →
+            </Link>
+          </Card>
 
           <Card>
             <SectionTitle right="provably fair">Adalet</SectionTitle>

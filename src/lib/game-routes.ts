@@ -13,7 +13,14 @@ import { ensureDailyState } from "@/lib/economy";
 import { ensureActiveSeed } from "@/lib/seeds";
 import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { WalletError } from "@/lib/wallet";
+import { MissionError } from "@/lib/mission-claim";
 import { firstError } from "@/lib/validation";
+
+const HTTP_FOR_MISSION: Record<string, number> = {
+  NOT_FOUND: 404,
+  ALREADY_CLAIMED: 409,
+  NOT_COMPLETED: 409,
+};
 
 const HTTP_FOR_WALLET: Record<string, number> = {
   INSUFFICIENT_FUNDS: 402,
@@ -75,6 +82,9 @@ export function gameRoute<S extends z.ZodTypeAny>(
 
       return NextResponse.json(await run({ user, body: parsed.data }));
     } catch (e) {
+      if (e instanceof MissionError) {
+        return fail(HTTP_FOR_MISSION[e.code] ?? 400, e.message, e.code);
+      }
       if (e instanceof WalletError) {
         return fail(HTTP_FOR_WALLET[e.code] ?? 400, e.message, e.code);
       }
