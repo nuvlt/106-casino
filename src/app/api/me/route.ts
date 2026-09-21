@@ -8,12 +8,13 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { badges, missions, playerStats, rounds, userBadges, userMissions } from "@/db/schema";
+import { missions, playerStats, rounds, userBadges, userMissions } from "@/db/schema";
 import { ApiError, fail, requireUser } from "@/lib/api";
 import { ensureDailyState, streakBonusFor } from "@/lib/economy";
 import { ensureActiveSeed } from "@/lib/seeds";
 import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { COIN } from "@/lib/games/config";
+import { BADGES } from "@/lib/badges";
 import { trtDay } from "@/lib/day";
 
 export const dynamic = "force-dynamic";
@@ -55,19 +56,32 @@ export async function GET() {
       .innerJoin(missions, eq(userMissions.missionId, missions.id))
       .where(and(eq(userMissions.userId, user.id), eq(missions.day, day)));
 
-    const earned = await db
-      .select({
-        id: badges.id,
-        title: badges.title,
-        description: badges.description,
-        icon: badges.icon,
-        tier: badges.tier,
-        earnedAt: userBadges.earnedAt,
-      })
+    // Rozet metinleri KOD'dan okunur (BADGES), veritabanından değil.
+    // Tablodaki satır yalnızca "bu rozet kazanıldı" kaydıdır. Başlığı
+    // adı geçtiği yerde tek kaynaktan almak, bir rozeti yeniden
+    // adlandırdığımızda üretim veritabanını yeniden tohumlama
+    // zorunluluğunu ortadan kaldırıyor.
+    const earnedRows = await db
+      .select({ badgeId: userBadges.badgeId, earnedAt: userBadges.earnedAt })
       .from(userBadges)
-      .innerJoin(badges, eq(userBadges.badgeId, badges.id))
       .where(eq(userBadges.userId, user.id))
       .orderBy(desc(userBadges.earnedAt));
+
+    const byId = new Map(BADGES.map((b) => [b.id, b]));
+    const earned = earnedRows.flatMap((r) => {
+      const def = byId.get(r.badgeId);
+      // Koddan kaldırılmış bir rozet varsa sessizce atlanır.
+      return def
+        ? [{
+            id: def.id,
+            title: def.title,
+            description: def.description,
+            icon: def.icon,
+            tier: def.tier,
+            earnedAt: r.earnedAt,
+          }]
+        : [];
+    });
 
     return NextResponse.json({
       user: {

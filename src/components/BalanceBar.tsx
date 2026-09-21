@@ -18,10 +18,10 @@ export function BalanceBar({
 }) {
   return (
     <header
-      className="sticky top-0 z-30 -mx-4 mb-4 border-b border-gold/20 px-4 py-3
+      className="sticky top-0 z-30 -mx-4 mb-4 border-b border-gold/20 px-4 py-3 lg:-mx-6 lg:px-6
                  bg-[linear-gradient(180deg,rgba(10,20,32,0.96),rgba(10,20,32,0.78))] backdrop-blur-lg"
     >
-      <div className="mx-auto flex max-w-lg items-center gap-3">
+      <div className="mx-auto flex w-full max-w-lg items-center gap-3 lg:max-w-6xl">
         {back ? (
           <Link
             href="/"

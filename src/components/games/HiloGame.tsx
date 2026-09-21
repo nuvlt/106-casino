@@ -177,7 +177,9 @@ export function HiloGame({
   const playing = roundId !== null && state !== null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- MASA --- */}
       <div className="gold-hairline rounded-3xl bg-[radial-gradient(120%_100%_at_50%_0%,#1d5a39_0%,#0d3b25_45%,#061a12_100%)] p-4">
         <div className="grid place-items-center py-2">
@@ -216,22 +218,28 @@ export function HiloGame({
         {error ? (
           <p className="rounded-2xl bg-lose/15 px-4 py-2.5 text-sm text-lose">{error}</p>
         ) : finished ? (
-          <div className="animate-pop text-center">
-            <div
-              className={`font-display tabular text-3xl font-black ${
-                finished.lost
-                  ? "text-lose"
-                  : outcomeOf(finished.payout, finished.stake, finished.mult).tone
-              }`}
-            >
-              {finished.lost
-                ? "yanıldın"
-                : outcomeOf(finished.payout, finished.stake, finished.mult).headline}
-            </div>
-            {!finished.lost ? (
-              <div className="text-xs font-black text-gold">{fmtMult(finished.mult)} ile çektin</div>
-            ) : null}
-          </div>
+          (() => {
+            // Yanlış tahminde de, bahsin altında çekişte de tek kelime.
+            const o = finished.lost
+              ? null
+              : outcomeOf(finished.payout, finished.stake, finished.mult);
+            return (
+              <div className="animate-pop text-center">
+                <div
+                  className={`font-display font-black ${o ? o.tone : "text-lose"} ${
+                    o?.numeric ? "tabular text-3xl" : "text-xl"
+                  }`}
+                >
+                  {o ? o.headline : "kaybettin"}
+                </div>
+                {o?.numeric ? (
+                  <div className="text-xs font-black text-gold">
+                    {fmtMult(finished.mult)} ile çektin
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()
         ) : playing ? (
           <p className="text-sm text-muted">Sıradaki kart yüksek mi alçak mı?</p>
         ) : (
@@ -249,6 +257,9 @@ export function HiloGame({
         </div>
       ) : null}
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- KONTROLLER --- */}
       {playing ? (
         <>
@@ -322,6 +333,7 @@ export function HiloGame({
 
       <div className="flex justify-center">
         <Pill tone="info">deste sunucuda karılır · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

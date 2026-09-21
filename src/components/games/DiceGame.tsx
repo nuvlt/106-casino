@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
@@ -15,6 +15,49 @@ interface DiceResponse {
   balance: number;
   result: { roll: number; threshold: number; mode: "under" | "over"; winChance: number };
   newBadges: { id: string; title: string; icon: string; reward: number }[];
+}
+
+/**
+ * Tek bir zar küpü. Sonuç 0,00–99,99 arası olduğu için klasik noktalı
+ * zar kullanılmıyor — iki küp sonucun onlar ve birler basamağını
+ * gösteriyor, ondalık kısım altta yazılıyor. Böylece görsel, oyunun
+ * gerçekten ürettiği sayıyla birebir uyuşuyor.
+ */
+function Die({
+  digit,
+  rolling,
+  tone,
+}: {
+  digit: string;
+  rolling: boolean;
+  tone: "win" | "lose" | "idle";
+}) {
+  const face =
+    tone === "win"
+      ? { bg: "linear-gradient(160deg,#ffffff,#eafff3 55%,#bff0d6)", ink: "#0b6b3a" }
+      : tone === "lose"
+        ? { bg: "linear-gradient(160deg,#ffffff,#fff0f2 55%,#ffd2da)", ink: "#a11026" }
+        : { bg: "linear-gradient(160deg,#ffffff,#f4f7ff 55%,#dbe4f5)", ink: "#1b2a44" };
+
+  return (
+    <div
+      className={`grid size-[72px] place-items-center rounded-[18px] sm:size-20 ${
+        rolling ? "animate-tumble" : "animate-settle"
+      }`}
+      style={{
+        background: face.bg,
+        boxShadow:
+          "0 10px 22px rgba(0,0,0,0.55), inset 0 -4px 0 rgba(0,0,0,0.16), inset 0 3px 0 rgba(255,255,255,0.95)",
+      }}
+    >
+      <span
+        className="font-display text-4xl font-black leading-none sm:text-[2.6rem]"
+        style={{ color: face.ink }}
+      >
+        {digit}
+      </span>
+    </div>
+  );
 }
 
 export function DiceGame({
@@ -71,23 +114,57 @@ export function DiceGame({
   }
 
   const roll100 = result ? result.result.roll : null;
+
+  /** Atış sürerken küplerde dönen sahte basamaklar. */
+  const [spinDigits, setSpinDigits] = useState("00");
+  const spinTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (rolling) {
+      spinTimer.current = setInterval(() => {
+        setSpinDigits(String(Math.floor(Math.random() * 100)).padStart(2, "0"));
+      }, 70);
+    } else if (spinTimer.current) {
+      clearInterval(spinTimer.current);
+      spinTimer.current = null;
+    }
+    return () => {
+      if (spinTimer.current) clearInterval(spinTimer.current);
+    };
+  }, [rolling]);
+
+  const shown = rolling
+    ? spinDigits
+    : roll100 !== null
+      ? String(Math.floor(roll100)).padStart(2, "0")
+      : "--";
   const outcome = result ? outcomeOf(result.payout, result.stake, result.mult) : null;
   const won = outcome?.kind === "win";
+  const dieTone: "win" | "lose" | "idle" = rolling || !result ? "idle" : won ? "win" : "lose";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- ZAR ŞERİDİ --- */}
       <div className="gold-hairline relative overflow-hidden rounded-3xl bg-gradient-to-b from-surface-2/80 to-surface/90 p-4 pb-6">
         <div className="mb-6 text-center">
+          <div className="mb-3 flex items-end justify-center gap-3">
+            <Die digit={shown[0]!} rolling={rolling} tone={dieTone} />
+            <Die digit={shown[1]!} rolling={rolling} tone={dieTone} />
+          </div>
           <div
-            className={`font-display tabular text-5xl font-black transition-colors ${
+            className={`font-display tabular text-3xl font-black transition-colors ${
               rolling ? "animate-pulse text-white/40" : won ? "text-win" : result ? "text-lose" : "text-white"
             }`}
           >
             {rolling ? "…" : roll100 !== null ? roll100.toFixed(2).replace(".", ",") : "—"}
           </div>
           <div className="mt-1 text-xs text-muted">
-            {outcome ? `${outcome.headline} · ${outcome.note}` : "0,00 – 99,99 arası atılır"}
+            {outcome
+              ? outcome.numeric
+                ? `${outcome.headline} · ${outcome.note}`
+                : outcome.headline
+              : "0,00 – 99,99 arası atılır"}
           </div>
         </div>
 
@@ -130,6 +207,9 @@ export function DiceGame({
         </div>
       </div>
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- AYARLAR --- */}
       <div className="gold-hairline space-y-3 rounded-3xl bg-gradient-to-b from-surface-2/80 to-surface/90 p-3">
         <div className="flex gap-1.5">
@@ -225,6 +305,7 @@ export function DiceGame({
 
       <div className="flex justify-center">
         <Pill tone="info">zar sunucuda atılır · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

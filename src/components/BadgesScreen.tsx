@@ -36,7 +36,7 @@ export function BadgesScreen() {
   const pct = data ? Math.round((data.earned / data.total) * 100) : 0;
 
   return (
-    <main className="mx-auto max-w-lg px-4 pb-16">
+    <main className="mx-auto w-full max-w-lg px-4 pb-16 lg:max-w-4xl lg:px-6">
       <BalanceBar balance={me.data?.wallet.balance} back title="Başarımlar" />
 
       {loading && !data ? (

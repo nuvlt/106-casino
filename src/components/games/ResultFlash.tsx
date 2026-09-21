@@ -21,7 +21,13 @@ export function ResultFlash({
   const o = outcomeOf(payout, stake, mult);
   return (
     <div className="animate-pop text-center">
-      <div className={`font-display text-4xl font-black tabular ${o.tone}`}>{o.headline}</div>
+      <div
+        className={`font-display font-black ${o.tone} ${
+          o.numeric ? "tabular text-4xl" : "text-2xl"
+        }`}
+      >
+        {o.headline}
+      </div>
       <div
         className={`mt-1 text-sm font-bold ${o.kind === "win" ? "text-gold" : "text-white/40"}`}
       >

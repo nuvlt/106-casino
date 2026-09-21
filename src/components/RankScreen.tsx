@@ -37,7 +37,7 @@ export function RankScreen() {
   const me = useMe();
 
   return (
-    <main className="mx-auto max-w-lg px-4 pb-16">
+    <main className="mx-auto w-full max-w-lg px-4 pb-16 lg:max-w-4xl lg:px-6">
       <BalanceBar balance={me.data?.wallet.balance} back title="Sıralama" />
 
       <div className="space-y-4">

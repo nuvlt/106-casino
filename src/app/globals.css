@@ -182,5 +182,46 @@ body > * {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee, .animate-pop, .animate-rise, .animate-floaty,
-  .animate-glow, .shine::before { animation: none !important; }
+  .animate-glow, .animate-tumble, .animate-settle,
+  .shine::before { animation: none !important; }
+}
+
+/* Zar takla animasyonu — atış sırasında zarlar havada döner. */
+@keyframes tumble {
+  0% {
+    transform: rotate(-14deg) translateY(0) scale(1);
+  }
+  25% {
+    transform: rotate(12deg) translateY(-10px) scale(1.06);
+  }
+  50% {
+    transform: rotate(-8deg) translateY(0) scale(1);
+  }
+  75% {
+    transform: rotate(16deg) translateY(-6px) scale(1.04);
+  }
+  100% {
+    transform: rotate(-14deg) translateY(0) scale(1);
+  }
+}
+
+.animate-tumble {
+  animation: tumble 0.42s ease-in-out infinite;
+}
+
+/* Yere oturan zarın son sekmesi. */
+@keyframes settle {
+  0% {
+    transform: translateY(-14px) rotate(9deg) scale(1.1);
+  }
+  60% {
+    transform: translateY(2px) rotate(-3deg) scale(0.97);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+.animate-settle {
+  animation: settle 0.34s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }

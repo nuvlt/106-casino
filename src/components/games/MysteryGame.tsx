@@ -79,7 +79,9 @@ export function MysteryGame({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- KUTULAR --- */}
       <div className="gold-hairline rounded-3xl bg-[radial-gradient(120%_100%_at_50%_0%,#4a0d46_0%,#2a0726_50%,#120410_100%)] p-4">
         <div className="grid grid-cols-3 gap-2.5">
@@ -161,6 +163,9 @@ export function MysteryGame({
         </div>
       ) : null}
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- KASA SEVİYESİ --- */}
       <div className="gold-hairline rounded-3xl bg-gradient-to-b from-surface-2/80 to-surface/90 p-3">
         <span className="mb-1.5 block text-[11px] font-black uppercase tracking-widest text-muted">Kasa</span>
@@ -229,6 +234,7 @@ export function MysteryGame({
 
       <div className="flex justify-center">
         <Pill tone="info">kutular sunucuda doldurulur · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

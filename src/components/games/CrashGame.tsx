@@ -245,7 +245,9 @@ export function CrashGame({
   })();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- UÇUŞ EKRANI --- */}
       <div
         className={`gold-hairline relative aspect-[4/3] w-full overflow-hidden rounded-3xl
@@ -402,6 +404,9 @@ export function CrashGame({
         <p className="rounded-2xl bg-lose/15 px-4 py-2.5 text-center text-sm text-lose">{error}</p>
       ) : null}
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- KONTROLLER --- */}
       {phase === "flying" ? (
         <Button
@@ -496,6 +501,7 @@ export function CrashGame({
 
       <div className="flex justify-center">
         <Pill tone="info">çarpanı sunucu hesaplar · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

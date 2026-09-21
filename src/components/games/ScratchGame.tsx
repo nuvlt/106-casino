@@ -89,7 +89,9 @@ export function ScratchGame({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- KART --- */}
       <div
         className="gloss relative overflow-hidden rounded-3xl p-[3px]
@@ -175,6 +177,9 @@ export function ScratchGame({
         </div>
       ) : null}
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       <BetControls bet={bet} setBet={setBet} balance={balance} disabled={!!card && !allOpen} />
 
       <Button
@@ -222,6 +227,7 @@ export function ScratchGame({
 
       <div className="flex justify-center">
         <Pill tone="info">sonuç kart alınırken belirlenir · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

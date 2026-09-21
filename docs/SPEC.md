@@ -488,6 +488,99 @@ Efektler: jeton tıkı, çark mandalı (dönüş sonuna doğru yavaşlayan
 çıtçıt), kazanç arpeji (çarpan büyüdükçe daha çok nota), kayıp,
 roket kalkışı, patlama, çekim zili ve rozet fanfarı.
 
+## 8.9 Arayüz kararları
+
+### Masaüstü yerleşimi
+
+Arayüz mobile-first tasarlandı ama ofiste çoğu kişi masaüstünden
+giriyor ve 1440px'lik bir ekranda ortada 512px'lik bir şerit bırakmak
+alanın üçte ikisini boşa harcıyordu. Geniş ekranda:
+
+- **Ana sayfa** iki sütuna ayrılır: solda kasa, görevler ve oyunlar;
+  sağda sıralama, rozetler ve adalet kartı. Oyun ızgarası dar ekranda
+  2, tablette 3, masaüstünde **4 sütun**.
+- **Oyun ekranları** da ikiye ayrılır: tahta solda sabit kalır,
+  ayarlar/bahis/buton sağa geçer. Böylece oyuncu oynarken sayfayı
+  aşağı kaydırmak zorunda kalmıyor.
+
+Ayrım tek bir sarmalayıcıyla yapıldı, `lg:` altında hiçbir şey
+değişmiyor — mobil görünüm birebir korundu (yatay taşma testi 0px).
+
+### Görevler oyunların üstünde
+
+Günlük görevler bilerek oyun ızgarasının ÜSTÜNDE duruyor. Görev, oyuncu
+hangi oyuna gireceğine karar vermeden önce görülmesi gereken bir
+yönlendirme; altta kalınca kimse fark etmiyordu.
+
+### Dil: kurumsal karşılıklar
+
+Rozet ve görev adlarında argo veya şiddet çağrışımlı ifadeler
+kullanılmıyor — bu şirket içi bir ürün ve MPİ başbayisi bir kurumun
+çalışanlarına gösteriliyor. "İlk Kan" → "İlk Adım", "Seri Katil" →
+"Üst Üste Beş", "Turist" → "Keşif", "Cesur Yürek" → "Tam Bakiye",
+"Demir Leblebi" → "İstikrar", "Küllerinden" → "Geri Dönüş".
+
+Rozet KİMLİKLERİ değişmedi (`ilk-kan` vb.), çünkü `user_badge`
+satırları onlara bağlı. Bunun yerine `/api/me` rozet metinlerini artık
+veritabanından değil **koddan** (`BADGES`) okuyor; tablo satırı yalnızca
+"bu rozet kazanıldı" kaydı. Böylece bir rozet yeniden adlandırıldığında
+üretim veritabanını yeniden tohumlamak gerekmiyor.
+
+### Kayıpta tutar yazılmaz
+
+Kaybedilen turda ekranda yalnızca **"kaybettin"** yazar; kaybedilen
+tutar büyük puntoyla tekrar edilmez. Oyuncu ne kaybettiğini zaten
+biliyor. Kazançta tutar aynen duruyor. Bahsin altında kalan bir ödeme
+de kayıptır, o yüzden orada da tutar yazılmaz — ama alt satırda kaçının
+geri geldiği görünür (`0,39x · 19,5 geri geldi`).
+
+`Outcome.numeric` bayrağı başlığın rakam mı kelime mi olduğunu söyler;
+arayüz kelime başlıklarda puntoyu küçültür.
+
+## 8.9b Plinko: çoklu top
+
+Tek top düşerken tahta ölü duruyordu. Artık aynı hamlede 1, 3, 5 veya
+10 top atılabiliyor.
+
+Bunu istemciden N ayrı istekle yapmak iki şeyi bozardı: bahis hız
+sınırı (saniyede 5) tek hamlede dolardı ve topların bir kısmı geçip bir
+kısmı reddedilebilirdi. Bu yüzden `POST /api/games/plinko/balls` var:
+**istek tek, tur çok**.
+
+Her top yine kendi turu olarak çözülür — kendi nonce'ı, kendi defter
+kaydı, kendi provably-fair doğrulaması, kendi idempotency anahtarı
+(`<anahtar>-<sıra>`). Yani çoklu top ekonomiye tek toplu oyunla birebir
+aynı şekilde giriyor; toplam bahis tam olarak `bahis × top` ve RTP
+değişmiyor. Tek fark hız: on top atmak, tek tek on tur oynamakla aynı
+şey.
+
+`scripts/test-plinko-balls.mts` bunu doğruluyor: beş topun beş ayrı tur
+ve beş ayrı nonce ürettiği, bakiyenin `önceki − bahis×5 + ödeme` olduğu,
+aynı anahtarla tekrar gönderimin yeni tur AÇMADIĞI ve ledger toplamının
+bakiyeyle tuttuğu.
+
+Arayüzde toplar hafif kaydırılarak bırakılır (aksi halde üst üste inip
+tek top gibi görünürlerdi) ve aynı kovaya birden fazla top düşerse
+kovaya `×3` rozeti basılır.
+
+## 8.9c Zar görseli
+
+Zar ekranı yalnızca bir sayı gösteriyordu. Artık iki fiziksel zar küpü
+var: sonucun onlar ve birler basamağını gösteriyorlar, ondalık kısım
+altta yazıyor. Klasik noktalı zar kullanılmadı çünkü sonuç 0,00–99,99
+arası; noktalar 1–6 ile sınırlı olduğundan görsel, oyunun gerçekten
+ürettiği sayıyla uyuşmazdı. Atış sırasında küpler takla atar ve
+basamaklar hızla değişir; sonuçta kazançta yeşile, kayıpta kırmızıya
+boyanır.
+
+## 8.9d Oyun sıralaması
+
+Katalogdaki sıra ana sayfadaki sırayı belirler; ilk iki kart **Sayı
+Tut** ve **Yüksek/Alçak**. `GAME_BY_CODE` eşlemesi konuma bağlıydı
+(`GAMES[0]`, `GAMES[1]`…) ve sıralama değişince sessizce yanlış oyuna
+işaret ederdi; artık slug üzerinden kuruluyor ve katalogda olmayan bir
+slug'da açılışta hata veriyor.
+
 ## 9.0 Görev ödülleri — alınır, kendiliğinden yatmaz
 
 Tamamlanan görevin ödülü otomatik ödenmez; oyuncu "Ödülü al" düğmesine

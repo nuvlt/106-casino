@@ -90,7 +90,9 @@ export function GuessGame({
   const won = outcome?.kind === "win";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- ÇEKİLİŞ TOPU --- */}
       <div className="gold-hairline grid place-items-center rounded-3xl bg-[radial-gradient(120%_100%_at_50%_0%,#0c2d6b_0%,#08193c_50%,#040a18_100%)] py-8">
         <div
@@ -110,7 +112,11 @@ export function GuessGame({
         <div className="mt-4 text-center">
           {result ? (
             <>
-              <div className={`font-display tabular text-2xl font-black ${outcome!.tone}`}>
+              <div
+                className={`font-display font-black ${outcome!.tone} ${
+                  outcome!.numeric ? "tabular text-2xl" : "text-xl"
+                }`}
+              >
                 {outcome!.headline}
               </div>
               <div className={`text-xs font-black ${won ? "text-gold" : "text-white/40"}`}>
@@ -135,6 +141,9 @@ export function GuessGame({
         </div>
       ) : null}
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- SAYILAR --- */}
       <div className="gold-hairline rounded-3xl bg-gradient-to-b from-surface-2/80 to-surface/90 p-3">
         <div className="mb-2 flex items-center justify-between">
@@ -221,6 +230,7 @@ export function GuessGame({
 
       <div className="flex justify-center">
         <Pill tone="info">çekiliş sunucuda yapılır · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

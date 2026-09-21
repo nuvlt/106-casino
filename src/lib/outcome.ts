@@ -11,8 +11,10 @@ import { coins, mult as fmtMult } from "@/lib/format";
 
 export interface Outcome {
   kind: "win" | "even" | "partial" | "loss";
-  /** Büyük rakam. */
+  /** Büyük başlık — kazançta rakam, kayıpta tek kelime. */
   headline: string;
+  /** Başlık rakam mı? Kelime başlıklar daha küçük puntoyla basılır. */
+  numeric: boolean;
   /** Tailwind renk sınıfı. */
   tone: string;
   /** Alt satır — çarpan ve geri gelen tutar. */
@@ -26,6 +28,7 @@ export function outcomeOf(payout: number, stake: number, mult: number): Outcome 
     return {
       kind: "win",
       headline: `+${coins(net)}`,
+      numeric: true,
       tone: "text-win",
       note: `${fmtMult(mult)} · ${coins(payout)} geri geldi`,
     };
@@ -34,21 +37,26 @@ export function outcomeOf(payout: number, stake: number, mult: number): Outcome 
     return {
       kind: "even",
       headline: "±0",
+      numeric: true,
       tone: "text-white/70",
       note: `${fmtMult(mult)} · bahsin geri geldi`,
     };
   }
+  // Kayıpta tutar yazılmıyor. Kaybettiğini zaten biliyor; rakamı
+  // büyük puntoyla tekrar etmek keyif kırıyor. Kazançta tutar kalıyor.
   if (payout > 0) {
     return {
       kind: "partial",
-      headline: `−${coins(-net)}`,
+      headline: "kaybettin",
+      numeric: false,
       tone: "text-lose",
       note: `${fmtMult(mult)} · ${coins(payout)} geri geldi`,
     };
   }
   return {
     kind: "loss",
-    headline: `−${coins(stake)}`,
+    headline: "kaybettin",
+    numeric: false,
     tone: "text-lose",
     note: "bu sefer olmadı",
   };

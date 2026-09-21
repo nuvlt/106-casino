@@ -19,6 +19,28 @@ export interface GameMeta {
 
 export const GAMES: readonly GameMeta[] = [
   {
+    slug: "guess",
+    title: "Sayı Tut",
+    tagline: "1–10 arası, kaç tane istersen",
+    gradient: "from-[#0c2d6b] via-[#2d7dd2] to-[#7dd3fc]",
+    accent: "#2d7dd2",
+    emoji: "🔢",
+    volatility: "orta",
+    maxWin: "9,5x",
+    ready: true,
+  },
+  {
+    slug: "hilo",
+    title: "Yüksek / Alçak",
+    tagline: "Zinciri uzat, istediğinde çek",
+    gradient: "from-[#111827] via-[#374151] to-[#d62828]",
+    accent: "#d62828",
+    emoji: "🃏",
+    volatility: "orta",
+    maxWin: "zincire bağlı",
+    ready: true,
+  },
+  {
     slug: "wheel",
     title: "Şans Çarkı",
     tagline: "Çevir ve altın dilimi yakala",
@@ -74,17 +96,6 @@ export const GAMES: readonly GameMeta[] = [
     ready: true,
   },
   {
-    slug: "guess",
-    title: "Sayı Tut",
-    tagline: "1–10 arası, kaç tane istersen",
-    gradient: "from-[#0c2d6b] via-[#2d7dd2] to-[#7dd3fc]",
-    accent: "#2d7dd2",
-    emoji: "🔢",
-    volatility: "orta",
-    maxWin: "9,5x",
-    ready: true,
-  },
-  {
     slug: "mystery",
     title: "Gizemli Kutular",
     tagline: "Dokuz kutu, bir seçim",
@@ -95,30 +106,27 @@ export const GAMES: readonly GameMeta[] = [
     maxWin: "500x",
     ready: true,
   },
-  {
-    slug: "hilo",
-    title: "Yüksek / Alçak",
-    tagline: "Zinciri uzat, istediğinde çek",
-    gradient: "from-[#111827] via-[#374151] to-[#d62828]",
-    accent: "#d62828",
-    emoji: "🃏",
-    volatility: "orta",
-    maxWin: "zincire bağlı",
-    ready: true,
-  },
 ];
 
 export const gameBySlug = (slug: string): GameMeta | undefined =>
   GAMES.find((g) => g.slug === slug);
 
 /** API oyun kodu → katalog. Akış ve sıralamada ad göstermek için. */
-export const GAME_BY_CODE: Record<string, GameMeta> = {
-  WHEEL: GAMES[0]!,
-  CRASH: GAMES[1]!,
-  DICE: GAMES[2]!,
-  PLINKO: GAMES[3]!,
-  SCRATCH: GAMES[4]!,
-  GUESS: GAMES[5]!,
-  MYSTERY: GAMES[6]!,
-  HIGHERLOWER: GAMES[7]!,
-};
+export const GAME_BY_CODE: Record<string, GameMeta> = Object.fromEntries(
+  (
+    [
+      ["WHEEL", "wheel"],
+      ["CRASH", "crash"],
+      ["DICE", "dice"],
+      ["PLINKO", "plinko"],
+      ["SCRATCH", "scratch"],
+      ["GUESS", "guess"],
+      ["MYSTERY", "mystery"],
+      ["HIGHERLOWER", "hilo"],
+    ] as const
+  ).map(([code, slug]) => {
+    const meta = gameBySlug(slug);
+    if (!meta) throw new Error(`Katalogda ${slug} yok — GAME_BY_CODE bozuk`);
+    return [code, meta];
+  }),
+);

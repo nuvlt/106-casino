@@ -106,7 +106,9 @@ export function WheelGame({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,360px)] lg:items-start lg:gap-6 lg:space-y-0">
+      {/* Geniş ekranda tahta solda kalır, kontroller sağa geçer. */}
+      <div className="space-y-4">
       {/* --- ÇARK --- */}
       <div className="relative mx-auto aspect-square w-full max-w-[340px]">
         {/* arkadan sıcak ışık */}
@@ -267,6 +269,9 @@ export function WheelGame({
         )}
       </div>
 
+      </div>
+
+      <div className="space-y-4 lg:sticky lg:top-20">
       <BetControls bet={bet} setBet={setBet} balance={balance} disabled={spinning} />
 
       <Button
@@ -318,6 +323,7 @@ export function WheelGame({
 
       <div className="flex justify-center">
         <Pill tone="info">sonuç sunucuda üretilir · provably fair</Pill>
+      </div>
       </div>
     </div>
   );

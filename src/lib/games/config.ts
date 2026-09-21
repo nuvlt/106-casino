@@ -70,6 +70,16 @@ export const DICE_MAX_WIN_OUTCOMES = 9_500; // en güvenli bahis: %95 şans → 
 /* PLINKO                                                              */
 /* ------------------------------------------------------------------ */
 /** scripts/calibrate-plinko.ts çıktısı. Her tablo simetrik ve tam %95. */
+/**
+ * Aynı hamlede atılabilecek en çok top. Her top ayrı bir turdur, yani
+ * toplam bahis = bahis × top sayısı. Üst sınır bakiyeye göre de
+ * daralır; bu yalnızca mutlak tavan.
+ */
+export const PLINKO_MAX_BALLS = 10;
+
+/** Arayüzdeki top sayısı seçenekleri. */
+export const PLINKO_BALL_CHOICES = [1, 3, 5, 10] as const;
+
 export const PLINKO_TABLES: Record<string, readonly number[]> = {
   low_8: [598, 285, 125, 67, 58, 67, 125, 285, 598],
   medium_8: [1881, 577, 122, 27, 21, 27, 122, 577, 1881],

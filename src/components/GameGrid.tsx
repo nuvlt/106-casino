@@ -9,7 +9,7 @@ import { GameArt, type ArtKey } from "@/components/GameArt";
  */
 export function GameGrid() {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4">
       {GAMES.map((g) => {
         const inner = (
           <>

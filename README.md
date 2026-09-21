@@ -72,7 +72,8 @@ npm run test:stale        # terk edilmiş tur kurtarma (7 kontrol)
 npm run test:crash        # Crash tur durumu / çekim anı (13 kontrol)
 npm run test:outcome      # sonuç gösterimi: net kâr/zarar (17 kontrol)
 npm run test:missions     # görev ödülü alma, çift ödeme koruması (15 kontrol)
-npm run test:all          # hepsi (102 kontrol)
+npm run test:plinko       # çoklu top: her top ayrı tur (11 kontrol)
+npm run test:all          # hepsi (116 kontrol)
 npm run verify:migration  # migration'ı gerçekten çalıştırıp doğrula
 npm run sim               # RTP Monte Carlo doğrulaması (32 yapılandırma)
 npm run verify:hilo       # Higher/Lower tam permütasyon sayımı
