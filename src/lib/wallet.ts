@@ -243,7 +243,7 @@ async function finalizeRound(
       set: {
         peakBalance: sql`greatest(${playerStats.peakBalance}, ${balance})`,
         peakBalanceAt: sql`case when ${balance} > ${playerStats.peakBalance}
-          then ${o.now} else ${playerStats.peakBalanceAt} end`,
+          then ${o.now.toISOString()} else ${playerStats.peakBalanceAt} end`,
         biggestWin: sql`greatest(${playerStats.biggestWin}, ${o.payout})`,
         biggestWinRoundId: sql`case when ${o.payout} > ${playerStats.biggestWin}
           then ${o.roundId} else ${playerStats.biggestWinRoundId} end`,
@@ -700,7 +700,7 @@ export async function closeExpiredRounds(db: Db, now = new Date()): Promise<numb
       and(
         eq(rounds.state, "OPEN"),
         sql`${rounds.expiresAt} is not null`,
-        sql`${rounds.expiresAt} < ${now}`,
+        sql`${rounds.expiresAt} < ${now.toISOString()}`,
       ),
     )
     .returning({ id: rounds.id });
