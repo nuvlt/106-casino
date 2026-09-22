@@ -67,7 +67,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Asıl kontrol: Workspace'in imzaladığı hosted-domain claim'i.
       const hd = (profile as { hd?: string }).hd;
-      return hd === env.allowedDomain;
+   console.error("[debug-giris]", JSON.stringify({ email, hd, allowed: env.allowedDomain, verified: profile?.email_verified }));
+   return hd === env.allowedDomain;
     },
 
     async session({ session, user }) {
