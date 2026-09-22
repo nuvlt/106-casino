@@ -98,6 +98,28 @@ const again = await settleRound(db, {
 });
 check("kendi anahtarıyla tekrar aynı turu döndürür", again.roundId === own.roundId);
 
+console.log("\nBakiye aşılamaz — coin'i yetmeyen oynayamaz");
+// Önce bir ısınma turu: "İlk Adım" rozeti ödülü testin ortasında bakiyeyi büyütmesin.
+await settleRound(db, {
+  userId: "u2", game: "DICE", bet, params: {}, idempotencyKey: "sec-warmup",
+  resolve: () => ({ payout: 0, mult: 0, detail: {} }),
+});
+await db.update(schema.users).set({ balance: 3 * bet }).where(eq(schema.users.id, "u2"));
+const burst = await Promise.all(
+  Array.from({ length: 10 }, (_, i) =>
+    codeOf(settleRound(db, {
+      userId: "u2", game: "DICE", bet, params: {}, idempotencyKey: `sec-burst-${i}`,
+      // Hep kaybeden bir tur: kazanç bakiyeyi büyütüp testi bulandırmasın.
+      resolve: () => ({ payout: 0, mult: 0, detail: {} }),
+    })),
+  ),
+);
+const [u2] = await db.select({ balance: schema.users.balance }).from(schema.users).where(eq(schema.users.id, "u2"));
+const accepted = burst.filter((c) => c === "OK").length;
+check("aynı anda 10 bahisten yalnızca bakiyenin yettiği 3'ü kabul edildi", accepted === 3, `${accepted} kabul`);
+check("reddedilenler 'yetersiz bakiye' ile döndü", burst.filter((c) => c === "INSUFFICIENT_FUNDS").length === 7, burst.join(","));
+check("bakiye sıfırın altına inmedi", u2!.balance === 0, `${u2!.balance}`);
+
 console.log("\nYüksek/Alçak çarpan tavanı");
 const nearCap = hiloDescribe({ deck: Array.from({ length: 52 }, (_, i) => i), position: 0, mult: HL_MAX_MULT / 2 });
 const shown = [nearCap.nextMult.higher, nearCap.nextMult.lower].filter((x): x is number => x != null);

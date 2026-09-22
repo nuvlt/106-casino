@@ -65,6 +65,15 @@ npm run build && npm start
 `*.proxy.rlwy.net`) adresleri kullanılmalı; `*.railway.internal` adresleri
 yalnızca Railway'in kendi ağı içinden çözülür, Vercel'den ulaşılamaz.
 
+## Oyunu sıfırdan başlatma
+
+[`scripts/reset-season.sql`](scripts/reset-season.sql) dosyasının içeriğini
+Railway → Postgres → Data (Query) sekmesine yapıştırıp çalıştırın. Turlar,
+defter, istatistikler, sıralama, görevler ve kazanılmış rozetler silinir;
+bakiyeler 0'lanır, herkes ilk girişte günlük 1.000 coin'ini alır. Hesaplar
+varsayılan olarak kalır; dosyadaki "TAM SIFIRLAMA" satırı açılırsa onlar da
+silinir. Geri alınamaz.
+
 ## Hız: sunucu ile veritabanı aynı bölgede olmalı
 
 Bir tur sunucuda yaklaşık 10 veritabanı gidiş-dönüşü yapar. Vercel
