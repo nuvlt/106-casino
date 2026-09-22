@@ -7,9 +7,6 @@
  * bakiyeyle tutmaya devam etmeli.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
-import { drizzle } from "drizzle-orm/pglite";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "../src/db/schema.ts";
 import type { Db } from "../src/db/types.ts";
@@ -19,6 +16,7 @@ import { settleRound } from "../src/lib/wallet.ts";
 import { resolvePlinko } from "../src/lib/games/engine.ts";
 import { seedBadges } from "../src/lib/badges.ts";
 import { COIN } from "../src/lib/games/config.ts";
+import { makeTestDb } from "./test-db.mts";
 
 let passed = 0, failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -26,15 +24,7 @@ function check(name: string, ok: boolean, detail = "") {
   else { console.log(`  ❌ ${name}${detail ? ` — ${detail}` : ""}`); failed++; }
 }
 
-const client = new PGlite();
-await client.waitReady;
-for (const file of readdirSync("drizzle").filter((f) => f.endsWith(".sql")).sort()) {
-  for (const stmt of readFileSync(`drizzle/${file}`, "utf8")
-    .split("--> statement-breakpoint").map((x) => x.trim()).filter(Boolean)) {
-    await client.exec(stmt);
-  }
-}
-const db = drizzle(client, { schema }) as unknown as Db;
+const { db, close } = await makeTestDb();
 await db.transaction(async (tx) => seedBadges(tx as never));
 await db.insert(schema.users).values({ id: "u1", email: "onur@106dijital.com", name: "Onur T." });
 await ensureDailyState(db, "u1");

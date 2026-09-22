@@ -8,6 +8,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { missions, rounds, userMissions } from "@/db/schema";
 import type { Tx } from "@/db/types";
+import { together } from "@/lib/together";
 
 export interface RoundFacts {
   userId: string;
@@ -52,6 +53,7 @@ export async function advanceMissions(tx: Tx, facts: RoundFacts): Promise<void> 
     distinctGames = row?.n ?? 0;
   }
 
+  const updates: Promise<unknown>[] = [];
   for (const m of open) {
     let progress = m.progress;
 
@@ -78,12 +80,18 @@ export async function advanceMissions(tx: Tx, facts: RoundFacts): Promise<void> 
 
     if (progress === m.progress) continue;
 
-    await tx
-      .update(userMissions)
-      .set({
-        progress,
-        completedAt: progress >= m.target ? new Date() : null,
-      })
-      .where(eq(userMissions.id, m.userMissionId));
+    // Her görev kendi satırına yazar; güncellemeler art arda gönderilip
+    // birlikte beklenir (tek gidiş-dönüş).
+    updates.push(
+      tx
+        .update(userMissions)
+        .set({
+          progress,
+          completedAt: progress >= m.target ? new Date() : null,
+        })
+        .where(eq(userMissions.id, m.userMissionId))
+        .execute(),
+    );
   }
+  await together(updates);
 }

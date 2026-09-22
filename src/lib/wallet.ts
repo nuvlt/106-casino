@@ -33,6 +33,7 @@ import { MAX_BET, MIN_BET } from "@/lib/games/config";
 import { trtDay } from "@/lib/day";
 import { advanceMissions } from "@/lib/mission-progress";
 import { awardBadges, badgeRewardTotal, type BadgeDef } from "@/lib/badges";
+import { together } from "@/lib/together";
 
 export type Game = (typeof gameEnum.enumValues)[number];
 
@@ -149,6 +150,26 @@ async function assertNoOpenRound(tx: Tx, userId: string): Promise<void> {
   }
 }
 
+/**
+ * Her bahsin ilk üç adımı: açık tur yok mu, bakiye düş, nonce ilerlet.
+ *
+ * Üçü aynı transaction'da, bu sırayla çalışır; ancak yanıtları tek tek
+ * beklenmeden art arda gönderilir (Postgres "pipelining"). Veritabanı
+ * uzaktayken her bekleme bir gidiş-dönüş demek — üç yerine bir.
+ * Herhangi biri hata verirse transaction geri alınır: düşüm de nonce
+ * artışı da kalıcı olmaz, yani sıralı hâliyle birebir aynı sonuç.
+ */
+async function openBet(tx: Tx, userId: string, bet: number) {
+  // together: biri hata verse de diğerleri transaction içinde biter
+  // (bkz. lib/together.ts); ilk hata dizideki sıraya göre fırlatılır.
+  const [, afterDebit, seed] = await together([
+    assertNoOpenRound(tx, userId),
+    debit(tx, userId, bet),
+    consumeNonce(tx, userId),
+  ]);
+  return { afterDebit, seed };
+}
+
 /** Idempotency: aynı anahtarla oynanmış tur varsa onu döndür. */
 async function findByKey(db: Db, userId: string, key: string): Promise<RoundResult | null> {
   const [dup] = await db.select().from(rounds).where(eq(rounds.idempotencyKey, key)).limit(1);
@@ -209,19 +230,27 @@ async function finalizeRound(
       .where(eq(users.id, o.userId))
       .returning({ balance: users.balance });
     balance = credited!.balance;
-
-    await tx.insert(ledgerEntries).values({
-      userId: o.userId,
-      type: "PAYOUT",
-      amount: o.payout,
-      balanceAfter: balance,
-      roundId: o.roundId,
-    });
   }
 
   const won = o.payout > 0;
 
-  const [stat] = await tx
+  // Buradan sonraki üç yazım da yalnızca yukarıda bilinen değerlere
+  // dayanıyor; art arda gönderilip birlikte beklenir (bkz. openBet).
+  const payoutEntry =
+    o.payout > 0
+      ? tx
+          .insert(ledgerEntries)
+          .values({
+            userId: o.userId,
+            type: "PAYOUT",
+            amount: o.payout,
+            balanceAfter: balance,
+            roundId: o.roundId,
+          })
+          .execute()
+      : null;
+
+  const statWrite = tx
     .insert(playerStats)
     .values({
       userId: o.userId,
@@ -263,9 +292,10 @@ async function finalizeRound(
         updatedAt: o.now,
       },
     })
-    .returning();
+    .returning()
+    .execute();
 
-  const [daily] = await tx
+  const dailyWrite = tx
     .insert(dailyStats)
     .values({
       userId: o.userId,
@@ -290,28 +320,48 @@ async function finalizeRound(
         wageredToday: sql`${dailyStats.wageredToday} + ${o.bet}`,
       },
     })
-    .returning();
+    .returning()
+    .execute();
 
-  await advanceMissions(tx, {
-    userId: o.userId,
-    day: o.day,
-    won,
-    bet: o.bet,
-    multX4: o.multX4,
-    currentWinStreak: stat?.currentWinStreak ?? 0,
-  });
+  const [, [stat], [daily]] = await together([payoutEntry, statWrite, dailyWrite]);
 
-  const newBadges = await awardBadges(tx, o.userId, {
-    roundsPlayed: stat?.roundsPlayed ?? 1,
-    gamesTouched: (stat?.gamesTouched as string[]) ?? [],
-    multX4: o.multX4,
-    currentStreak: stat?.currentStreak ?? 0,
-    balanceBeforeBet: o.balanceBeforeBet,
-    balanceAfter: balance,
-    minBalanceToday: daily?.minBalance ?? balance,
-    won,
-    bet: o.bet,
-  });
+  // Görevler ve rozetler farklı tablolara yazar; ikisi aynı anda.
+  const [, newBadges] = await together([
+    advanceMissions(tx, {
+      userId: o.userId,
+      day: o.day,
+      won,
+      bet: o.bet,
+      multX4: o.multX4,
+      currentWinStreak: stat?.currentWinStreak ?? 0,
+    }),
+    awardBadges(tx, o.userId, {
+      roundsPlayed: stat?.roundsPlayed ?? 1,
+      gamesTouched: (stat?.gamesTouched as string[]) ?? [],
+      multX4: o.multX4,
+      currentStreak: stat?.currentStreak ?? 0,
+      balanceBeforeBet: o.balanceBeforeBet,
+      balanceAfter: balance,
+      minBalanceToday: daily?.minBalance ?? balance,
+      won,
+      bet: o.bet,
+    }),
+  ]);
+
+  // Akış kaydı rozet ödülünden bağımsız; ödül varsa onunla birlikte gider.
+  const feedEntry =
+    o.multX4 >= FEED_MULT_THRESHOLD || o.payout >= FEED_PAYOUT_THRESHOLD
+      ? tx
+          .insert(feedEvents)
+          .values({
+            userId: o.userId,
+            game: o.game,
+            payout: o.payout,
+            multX4: o.multX4,
+            roundId: o.roundId,
+          })
+          .execute()
+      : null;
 
   const reward = badgeRewardTotal(newBadges);
   if (reward > 0) {
@@ -332,15 +382,7 @@ async function finalizeRound(
     });
   }
 
-  if (o.multX4 >= FEED_MULT_THRESHOLD || o.payout >= FEED_PAYOUT_THRESHOLD) {
-    await tx.insert(feedEvents).values({
-      userId: o.userId,
-      game: o.game,
-      payout: o.payout,
-      multX4: o.multX4,
-      roundId: o.roundId,
-    });
-  }
+  await feedEntry;
 
   return { balance, newBadges };
 }
@@ -370,10 +412,7 @@ export async function settleRound(
   if (dup) return dup;
 
   return db.transaction(async (tx) => {
-    await assertNoOpenRound(tx, opts.userId);
-
-    const afterDebit = await debit(tx, opts.userId, opts.bet);
-    const seed = await consumeNonce(tx, opts.userId);
+    const { afterDebit, seed } = await openBet(tx, opts.userId, opts.bet);
 
     // Sonuç burada, sunucuda üretilir.
     const rng = rngFor(seed.serverSeed, seed.clientSeed, seed.nonce);
@@ -404,15 +443,20 @@ export async function settleRound(
 
     const roundId = round!.id;
 
-    await tx.insert(ledgerEntries).values({
-      userId: opts.userId,
-      type: "BET",
-      amount: -opts.bet,
-      balanceAfter: afterDebit,
-      roundId,
-    });
+    // BET kaydı ile tur kapanışı birbirine bağlı değil; kayıt önce
+    // gönderilir (defterde sıra korunur), yanıtı kapanışla birlikte beklenir.
+    const betEntry = tx
+      .insert(ledgerEntries)
+      .values({
+        userId: opts.userId,
+        type: "BET",
+        amount: -opts.bet,
+        balanceAfter: afterDebit,
+        roundId,
+      })
+      .execute();
 
-    const { balance, newBadges } = await finalizeRound(tx, {
+    const [, { balance, newBadges }] = await together([betEntry, finalizeRound(tx, {
       userId: opts.userId,
       roundId,
       game: opts.game,
@@ -423,7 +467,7 @@ export async function settleRound(
       balanceAfterDebit: afterDebit,
       balanceBeforeBet: afterDebit + opts.bet,
       now,
-    });
+    })]);
 
     return {
       roundId,
@@ -503,10 +547,7 @@ export async function openRound(
   }
 
   return db.transaction(async (tx) => {
-    await assertNoOpenRound(tx, opts.userId);
-
-    const afterDebit = await debit(tx, opts.userId, opts.bet);
-    const seed = await consumeNonce(tx, opts.userId);
+    const { afterDebit, seed } = await openBet(tx, opts.userId, opts.bet);
 
     const rng = rngFor(seed.serverSeed, seed.clientSeed, seed.nonce);
     const { secret, publicState } = opts.build(rng);

@@ -1,8 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
 import { AdminScreen } from "@/components/AdminScreen";
 
 /**
@@ -14,13 +11,9 @@ export default async function AdminPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/giris");
 
-  const [me] = await db
-    .select({ role: users.role })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-
-  if (me?.role !== "ADMIN") notFound();
+  // Rol, API'lerle aynı kaynaktan (ADMIN_EMAILS, bkz. auth.ts) gelir:
+  // listeye eklenen hemen girer, çıkarılan hemen düşer.
+  if (session.user.role !== "ADMIN") notFound();
 
   return <AdminScreen />;
 }

@@ -1,5 +1,5 @@
 /**
- * POST /api/cron/daily — her gün 00:00 TRT.
+ * GET/POST /api/cron/daily — her gün 00:00 TRT (Vercel Cron, bkz. vercel.json).
  *
  * Kullanıcılar zaten /api/me üzerinden günlük haklarını alıyor; bu iş
  * yalnızca o güne ait görevleri önceden üretir ve süresi geçmiş açık
@@ -55,3 +55,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ day, missionsCreated: created, roundsClosed: closed.length });
 }
+
+// Vercel Cron işleri GET isteği gönderir (Authorization: Bearer CRON_SECRET).
+export const GET = POST;

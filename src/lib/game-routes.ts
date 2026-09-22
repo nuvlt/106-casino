@@ -9,7 +9,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { ApiError, fail, requireUser, type SessionUser } from "@/lib/api";
 import { betRateLimit } from "@/lib/ratelimit";
-import { ensureDailyState } from "@/lib/economy";
+import { ensureDailyClaim } from "@/lib/economy";
 import { ensureActiveSeed } from "@/lib/seeds";
 import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { WalletError } from "@/lib/wallet";
@@ -51,16 +51,6 @@ export function gameRoute<S extends z.ZodTypeAny>(
     try {
       const user = await requireUser();
 
-      if (rateLimited) {
-        const limit = await betRateLimit(user.id);
-        if (!limit.ok) {
-          return NextResponse.json(
-            { error: "Çok hızlısın, biraz yavaşla", code: "RATE_LIMITED" },
-            { status: 429, headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) } },
-          );
-        }
-      }
-
       let raw: unknown;
       try {
         raw = await req.json();
@@ -71,13 +61,33 @@ export function gameRoute<S extends z.ZodTypeAny>(
       const parsed = schema.safeParse(raw);
       if (!parsed.success) return fail(400, firstError(parsed.error), "VALIDATION");
 
+      // Hız sınırı (Redis) ve günlük hak kontrolü (Postgres) birbirinden
+      // bağımsız; sırayla beklemek yerine aynı anda sorulur. Sınıra
+      // takılan istekte günlük hak yine verilmiş olur — zararsız, zaten
+      // bir sonraki istekte verilecekti.
+      const [limit] = await Promise.all([
+        rateLimited ? betRateLimit(user.id) : null,
+        // Sabah ilk oyununda günlük hak burada verilir. Crash çözümünden
+        // ÖNCE bitmeli: günlük sıfırlama bakiyeyi yeniden yazar, dünden
+        // kalan Crash ödemesi ondan sonra eklenmeli.
+        ensureWallet ? ensureDailyClaim(db, user.id) : null,
+      ]);
+
+      if (limit && !limit.ok) {
+        return NextResponse.json(
+          { error: "Çok hızlısın, biraz yavaşla", code: "RATE_LIMITED" },
+          { status: 429, headers: { "Retry-After": String(Math.ceil(limit.retryAfterMs / 1000)) } },
+        );
+      }
+
       if (ensureWallet) {
-        // Sabah ilk oyununda günlük hak burada verilir.
-        await ensureDailyState(db, user.id);
-        await ensureActiveSeed(db, user.id);
+        // Bu ikisi de birbirinden bağımsız — aynı anda.
         // Sekme kapanınca yarım kalmış Crash turları burada sonuçlanır;
         // aksi halde oyuncu kendi eski turu yüzünden kilitli kalırdı.
-        await resolveDecidedCrashRounds(db, user.id);
+        await Promise.all([
+          ensureActiveSeed(db, user.id),
+          resolveDecidedCrashRounds(db, user.id),
+        ]);
       }
 
       return NextResponse.json(await run({ user, body: parsed.data }));

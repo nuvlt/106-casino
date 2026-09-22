@@ -17,33 +17,22 @@ export async function GET() {
   try {
     await requireUser();
 
-    const recent = await db
-      .select({
-        id: feedEvents.id,
-        name: users.name,
-        game: feedEvents.game,
-        payout: feedEvents.payout,
-        multX4: feedEvents.multX4,
-        createdAt: feedEvents.createdAt,
-      })
-      .from(feedEvents)
-      .innerJoin(users, eq(feedEvents.userId, users.id))
-      .orderBy(desc(feedEvents.createdAt))
-      .limit(20);
+    const row = {
+      id: feedEvents.id,
+      name: users.name,
+      game: feedEvents.game,
+      payout: feedEvents.payout,
+      multX4: feedEvents.multX4,
+      createdAt: feedEvents.createdAt,
+    };
+    const base = () =>
+      db.select(row).from(feedEvents).innerJoin(users, eq(feedEvents.userId, users.id));
 
-    const legendary = await db
-      .select({
-        id: feedEvents.id,
-        name: users.name,
-        game: feedEvents.game,
-        payout: feedEvents.payout,
-        multX4: feedEvents.multX4,
-        createdAt: feedEvents.createdAt,
-      })
-      .from(feedEvents)
-      .innerJoin(users, eq(feedEvents.userId, users.id))
-      .orderBy(desc(feedEvents.multX4))
-      .limit(5);
+    // İki liste birbirinden bağımsız — aynı anda.
+    const [recent, legendary] = await Promise.all([
+      base().orderBy(desc(feedEvents.createdAt)).limit(20),
+      base().orderBy(desc(feedEvents.multX4)).limit(5),
+    ]);
 
     return NextResponse.json({ recent, legendary });
   } catch (e) {

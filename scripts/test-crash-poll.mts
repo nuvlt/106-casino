@@ -7,9 +7,6 @@
  * DOĞRU anda değiştiğini ve geleceği SIZDIRMADIĞINI doğrular.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
-import { drizzle } from "drizzle-orm/pglite";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "../src/db/schema.ts";
 import type { Db } from "../src/db/types.ts";
@@ -19,6 +16,7 @@ import { ensureActiveSeed } from "../src/lib/seeds.ts";
 import { openRound } from "../src/lib/wallet.ts";
 import { pollCrashRound } from "../src/lib/crash.ts";
 import { COIN } from "../src/lib/games/config.ts";
+import { makeTestDb } from "./test-db.mts";
 
 let pass = 0, fail = 0;
 const check = (n: string, ok: boolean, d = "") => {
@@ -26,12 +24,7 @@ const check = (n: string, ok: boolean, d = "") => {
   ok ? pass++ : fail++;
 };
 
-const client = new PGlite();
-await client.waitReady;
-for (const f of readdirSync("drizzle").filter((x) => x.endsWith(".sql")).sort())
-  for (const st of readFileSync(`drizzle/${f}`, "utf8").split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean))
-    await client.exec(st);
-const db = drizzle(client, { schema }) as unknown as Db;
+const { db, close } = await makeTestDb();
 await db.transaction(async (tx) => seedBadges(tx as never));
 await db.insert(schema.users).values({ id: "u1", email: "o@106dijital.com", name: "Onur" });
 await ensureDailyState(db, "u1");
@@ -112,6 +105,6 @@ const [sum] = await db
 const [u] = await db.select().from(schema.users).where(eq(schema.users.id, "u1"));
 check("ledger toplamı = bakiye", Number(sum!.t) === u!.balance, `${sum!.t} vs ${u!.balance}`);
 
-await client.close();
+await close();
 console.log(`\n${pass} geçti, ${fail} başarısız`);
 process.exit(fail === 0 ? 0 : 1);

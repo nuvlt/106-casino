@@ -16,7 +16,8 @@ Tam şartname: [`docs/SPEC.md`](docs/SPEC.md)
 - [x] Sekiz oyunun arayüzü ve ana sayfa
 - [x] Görev ödülü alma, rozet ve sıralama sayfaları
 - [x] Backoffice (/admin) + provably fair doğrulama sayfası (/dogrula)
-- [ ] Deploy (Vercel + Railway)
+- [x] Deploy (Vercel + Railway)
+- [x] Oyun geçmişi sayfası (/gecmis), hız iyileştirmeleri, sistem sağlığı kartı
 
 ## Hızlı başlangıç — hiçbir kurulum gerekmez
 
@@ -56,8 +57,27 @@ her açılışta temiz 1.000 coin. Kalıcı istersen `pglite://.pglite`.
 ```bash
 cp .env.example .env     # Railway değerlerini doldur
 npm run db:migrate       # şemayı veritabanına uygula
+npm run db:seed          # rozet tanımlarını yaz (tekrar çalıştırmak güvenli)
 npm run build && npm start
 ```
+
+`DATABASE_URL` / `REDIS_URL` için Railway'in **public** (TCP Proxy,
+`*.proxy.rlwy.net`) adresleri kullanılmalı; `*.railway.internal` adresleri
+yalnızca Railway'in kendi ağı içinden çözülür, Vercel'den ulaşılamaz.
+
+## Hız: sunucu ile veritabanı aynı bölgede olmalı
+
+Bir tur sunucuda yaklaşık 10 veritabanı gidiş-dönüşü yapar. Vercel
+fonksiyonu ile Railway farklı kıtalardaysa her gidiş-dönüş 70–100 ms sürer
+ve bir çark çevirmesi saniyeleri bulur. Bu yüzden:
+
+- `vercel.json` → `"regions": ["fra1"]` (Frankfurt)
+- Railway'de Postgres **ve** Redis servisleri → Settings → Region →
+  **EU West (Amsterdam)**
+
+Backoffice'teki **Sistem** kartı (`/api/health`) fonksiyonun bölgesini ve
+veritabanı/Redis gidiş-dönüş süresini gösterir; ~10 ms'nin altı "aynı
+bölge" demektir.
 
 ## Komutlar
 
@@ -75,12 +95,17 @@ npm run test:missions     # görev ödülü alma, çift ödeme koruması (15 kon
 npm run test:plinko       # çoklu top: her top ayrı tur (11 kontrol)
 npm run test:verify       # tarayıcı doğrulayıcısı = sunucu motoru (10 kontrol)
 npm run test:all          # hepsi (126 kontrol)
+
+# Aynı testler GERÇEK bir Postgres sunucusuna, üretimdeki sürücüyle (postgres.js):
+TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:5432/casino_test npm run test:all
+# (verilen veritabanının "public" şeması her dosyada silinip yeniden kurulur)
 npm run verify:migration  # migration'ı gerçekten çalıştırıp doğrula
 npm run sim               # RTP Monte Carlo doğrulaması (32 yapılandırma)
 npm run verify:hilo       # Higher/Lower tam permütasyon sayımı
 npm run calibrate         # Plinko ödeme tablolarını yeniden üret
 
 npm run db:generate       # şema değişince yeni migration üret
+npm run db:seed           # rozet tanımlarını üretim veritabanına yaz
 ```
 
 Testler ve doğrulamalar veritabanı sunucusu gerektirmez — PGlite ile

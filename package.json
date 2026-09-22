@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed.mts",
     "db:studio": "drizzle-kit studio",
     "verify:migration": "tsx scripts/verify-migration.mts",
     "sim": "tsx scripts/simulate.ts",
@@ -15,13 +16,14 @@
     "calibrate": "tsx scripts/calibrate-plinko.ts",
     "test": "tsx scripts/test-wallet.mts",
     "test:games": "tsx scripts/test-games.mts",
-    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run test:plinko && npm run test:verify && npm run verify:migration",
+    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run test:plinko && npm run test:verify && npm run test:together && npm run verify:migration",
     "test:stale": "tsx scripts/test-stale.mts",
     "test:crash": "tsx scripts/test-crash-poll.mts",
     "test:outcome": "tsx scripts/test-outcome.mts",
     "test:missions": "tsx scripts/test-missions.mts",
     "test:plinko": "tsx scripts/test-plinko-balls.mts",
-    "test:verify": "tsx scripts/test-verify.mts"
+    "test:verify": "tsx scripts/test-verify.mts",
+    "test:together": "tsx scripts/test-together.mts"
   },
   "license": "ISC",
   "devDependencies": {

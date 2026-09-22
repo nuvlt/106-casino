@@ -42,6 +42,29 @@ export function streakBonusFor(streakDay: number): number {
 }
 
 /**
+ * Günlük hakkın verildiğini garanti eder, bakiyeyi OKUMADAN.
+ *
+ * Bahis uçları ve /api/me bakiyeyi zaten kendileri (daha sonra, doğru
+ * anda) okuyor; sıradan bir istekte burada tek sorgu yapılır. Günün ilk
+ * isteğinde tam akış (ensureDailyState) çalışır.
+ */
+export async function ensureDailyClaim(
+  db: Db,
+  userId: string,
+): Promise<{ day: string; streakDay: number; granted: number }> {
+  const day = trtDay();
+  const [claim] = await db
+    .select({ streakDay: dailyClaims.streakDay, granted: dailyClaims.granted })
+    .from(dailyClaims)
+    .where(and(eq(dailyClaims.userId, userId), eq(dailyClaims.day, day)))
+    .limit(1);
+  if (claim) return { day, ...claim };
+
+  const state = await ensureDailyState(db, userId);
+  return { day: state.day, streakDay: state.streakDay, granted: state.granted };
+}
+
+/**
  * Bugünün hakkını garanti eder. Zaten alınmışsa hiçbir şey yazmaz.
  */
 export async function ensureDailyState(db: Db, userId: string): Promise<DailyState> {

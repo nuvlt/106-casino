@@ -11,9 +11,7 @@
  *   • zirve bakiye düşüşte korunur (sıralamanın temeli)
  */
 
-import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
-import { drizzle } from "drizzle-orm/pglite";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "../src/db/schema.ts";
 import type { Db } from "../src/db/types.ts";
@@ -23,6 +21,7 @@ import { settleRound, WalletError } from "../src/lib/wallet.ts";
 import { resolveDice, resolveWheel } from "../src/lib/games/engine.ts";
 import { seedBadges } from "../src/lib/badges.ts";
 import { COIN, DAILY_GRANT } from "../src/lib/games/config.ts";
+import { makeTestDb } from "./test-db.mts";
 
 let passed = 0;
 let failed = 0;
@@ -37,17 +36,7 @@ function check(name: string, condition: boolean, detail = "") {
   }
 }
 
-const client = new PGlite();
-await client.waitReady;
-for (const file of readdirSync("drizzle").filter((f) => f.endsWith(".sql")).sort()) {
-  for (const stmt of readFileSync(`drizzle/${file}`, "utf8")
-    .split("--> statement-breakpoint")
-    .map((s) => s.trim())
-    .filter(Boolean)) {
-    await client.exec(stmt);
-  }
-}
-const db = drizzle(client, { schema }) as unknown as Db;
+const { db, close } = await makeTestDb();
 await db.transaction(async (tx) => seedBadges(tx as never));
 
 await db.insert(schema.users).values({ id: "u1", email: "onur@106dijital.com", name: "Onur T." });
@@ -178,7 +167,7 @@ check("istemciye dönen yanıtta serverSeed'in kendisi geçmiyor",
 check("ama hash'i yayınlanıyor (taahhüt)",
   activeSeed !== undefined && clientFacing.includes(activeSeed.serverSeedHash));
 
-await client.close();
+await close();
 
 console.log(`\n${passed} geçti, ${failed} başarısız`);
 process.exit(failed === 0 ? 0 : 1);

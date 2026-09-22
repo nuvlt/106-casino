@@ -8,64 +8,67 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { missions, playerStats, rounds, userBadges, userMissions } from "@/db/schema";
+import { missions, playerStats, rounds, userBadges, userMissions, users } from "@/db/schema";
 import { ApiError, fail, requireUser } from "@/lib/api";
-import { ensureDailyState, streakBonusFor } from "@/lib/economy";
+import { ensureDailyClaim, streakBonusFor } from "@/lib/economy";
 import { ensureActiveSeed } from "@/lib/seeds";
 import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { COIN } from "@/lib/games/config";
 import { BADGES } from "@/lib/badges";
-import { trtDay } from "@/lib/day";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const user = await requireUser();
-    const daily = await ensureDailyState(db, user.id);
-    const seed = await ensureActiveSeed(db, user.id);
-    // Yarım kalmış turlar burada sonuçlanır (bkz. lib/crash.ts).
-    await resolveDecidedCrashRounds(db, user.id);
-    const day = trtDay();
 
-    const [openRound] = await db
-      .select({ id: rounds.id, game: rounds.game, bet: rounds.bet })
-      .from(rounds)
-      .where(and(eq(rounds.userId, user.id), eq(rounds.state, "OPEN")))
-      .limit(1);
+    // Günlük hak ÖNCE: sıfırlama bakiyeyi yeniden yazar. Tohum ve yarım
+    // Crash turları ondan sonra, birbirinden bağımsız olduğu için aynı anda.
+    const daily = await ensureDailyClaim(db, user.id);
+    const [seed] = await Promise.all([
+      ensureActiveSeed(db, user.id),
+      // Yarım kalmış turlar burada sonuçlanır (bkz. lib/crash.ts).
+      resolveDecidedCrashRounds(db, user.id),
+    ]);
+    const day = daily.day;
 
-    const [stat] = await db
-      .select()
-      .from(playerStats)
-      .where(eq(playerStats.userId, user.id))
-      .limit(1);
-
-    const todaysMissions = await db
-      .select({
-        id: missions.id,
-        kind: missions.kind,
-        title: missions.title,
-        subtitle: missions.subtitle,
-        target: missions.target,
-        reward: missions.reward,
-        progress: userMissions.progress,
-        completedAt: userMissions.completedAt,
-        claimedAt: userMissions.claimedAt,
-      })
-      .from(userMissions)
-      .innerJoin(missions, eq(userMissions.missionId, missions.id))
-      .where(and(eq(userMissions.userId, user.id), eq(missions.day, day)));
-
-    // Rozet metinleri KOD'dan okunur (BADGES), veritabanından değil.
-    // Tablodaki satır yalnızca "bu rozet kazanıldı" kaydıdır. Başlığı
-    // adı geçtiği yerde tek kaynaktan almak, bir rozeti yeniden
-    // adlandırdığımızda üretim veritabanını yeniden tohumlama
-    // zorunluluğunu ortadan kaldırıyor.
-    const earnedRows = await db
-      .select({ badgeId: userBadges.badgeId, earnedAt: userBadges.earnedAt })
-      .from(userBadges)
-      .where(eq(userBadges.userId, user.id))
-      .orderBy(desc(userBadges.earnedAt));
+    // Geri kalan her şey salt okuma ve birbirinden bağımsız: tek seferde.
+    // Bakiye en sonda okunur ki az önce kapanan Crash turunun ödemesi dahil olsun.
+    const [[wallet], [openRound], [stat], todaysMissions, earnedRows] = await Promise.all([
+      db.select({ balance: users.balance }).from(users).where(eq(users.id, user.id)).limit(1),
+      db
+        .select({ id: rounds.id, game: rounds.game, bet: rounds.bet })
+        .from(rounds)
+        .where(and(eq(rounds.userId, user.id), eq(rounds.state, "OPEN")))
+        .limit(1),
+      db.select().from(playerStats).where(eq(playerStats.userId, user.id)).limit(1),
+      db
+        .select({
+          id: missions.id,
+          kind: missions.kind,
+          title: missions.title,
+          subtitle: missions.subtitle,
+          target: missions.target,
+          reward: missions.reward,
+          progress: userMissions.progress,
+          completedAt: userMissions.completedAt,
+          claimedAt: userMissions.claimedAt,
+        })
+        .from(userMissions)
+        .innerJoin(missions, eq(userMissions.missionId, missions.id))
+        .where(and(eq(userMissions.userId, user.id), eq(missions.day, day))),
+      // Rozet metinleri KOD'dan okunur (BADGES), veritabanından değil.
+      // Tablodaki satır yalnızca "bu rozet kazanıldı" kaydıdır. Başlığı
+      // adı geçtiği yerde tek kaynaktan almak, bir rozeti yeniden
+      // adlandırdığımızda üretim veritabanını yeniden tohumlama
+      // zorunluluğunu ortadan kaldırıyor.
+      db
+        .select({ badgeId: userBadges.badgeId, earnedAt: userBadges.earnedAt })
+        .from(userBadges)
+        .where(eq(userBadges.userId, user.id))
+        .orderBy(desc(userBadges.earnedAt)),
+    ]);
+    const balance = wallet?.balance ?? 0;
 
     const byId = new Map(BADGES.map((b) => [b.id, b]));
     const earned = earnedRows.flatMap((r) => {
@@ -91,9 +94,9 @@ export async function GET() {
         role: user.role,
       },
       wallet: {
-        balance: daily.balance,
-        balanceCoins: daily.balance / COIN,
-        day: daily.day,
+        balance,
+        balanceCoins: balance / COIN,
+        day,
       },
       streak: {
         day: daily.streakDay,

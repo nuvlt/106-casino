@@ -9,6 +9,7 @@ import { sql } from "drizzle-orm";
 import { badges, userBadges } from "@/db/schema";
 import type { Tx } from "@/db/types";
 import { COIN } from "@/lib/games/config";
+import { together } from "@/lib/together";
 
 export interface BadgeDef {
   id: string;
@@ -90,20 +91,23 @@ export async function awardBadges(
   const candidates = earnedBadgeIds(ctx);
   if (candidates.length === 0) return [];
 
-  const awarded: BadgeDef[] = [];
-  for (const id of candidates) {
+  // Adaylar birbirinden bağımsız; eklemeler art arda gönderilip birlikte
+  // beklenir. Sonuç sırası aday sırasıyla aynı kalır.
+  const defs = candidates.flatMap((id) => {
     const def = BADGE_BY_ID.get(id);
-    if (!def) continue;
-
-    const inserted = await tx
-      .insert(userBadges)
-      .values({ userId, badgeId: id, context: { multX4: ctx.multX4 } })
-      .onConflictDoNothing()
-      .returning({ id: userBadges.id });
-
-    if (inserted.length > 0) awarded.push(def);
-  }
-  return awarded;
+    return def ? [def] : [];
+  });
+  const results = await together(
+    defs.map((def) =>
+      tx
+        .insert(userBadges)
+        .values({ userId, badgeId: def.id, context: { multX4: ctx.multX4 } })
+        .onConflictDoNothing()
+        .returning({ id: userBadges.id })
+        .execute(),
+    ),
+  );
+  return defs.filter((_, i) => results[i]!.length > 0);
 }
 
 /** Rozet ödüllerinin toplamı — çağıran bunu bakiyeye ekler ve defterler. */

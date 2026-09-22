@@ -27,7 +27,14 @@ interface SpinResponse {
   newBadges: { id: string; title: string; icon: string; reward: number }[];
 }
 
+/** Tıklar sesinin yavaşlama eğrisi için yaklaşık toplam dönüş süresi. */
 const SPIN_MS = 4200;
+/** Sunucu yanıtını beklerken çarkın sabit hızı (derece/sn). */
+const CRUISE_DEG_S = 720;
+/** Tıklamadan sonra tam hıza çıkma süresi. */
+const RAMP_MS = 350;
+/** Sonuç gelince yavaşlama en az bu kadar sürer — "hemen durdu" hissi olmasın. */
+const MIN_DECEL_MS = 3200;
 const R = 100; // SVG yarıçapı (viewBox birimi)
 
 export function WheelGame({
@@ -41,11 +48,22 @@ export function WheelGame({
 }) {
   const [bet, setBet] = useState(50 * COIN);
   const [spinning, setSpinning] = useState(false);
-  const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<(SpinResponse & { stake: number }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<{ mult: number; tier: number }[]>([]);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Çarkın açısı React state'i yerine ref'te tutulur ve her karede doğrudan
+  // SVG'ye yazılır: 60 kare/sn'de koca bir SVG'yi yeniden çizdirmemek için.
+  const wheelRef = useRef<SVGSVGElement | null>(null);
+  const angle = useRef(0);
+  const raf = useRef<number | null>(null);
+
+  useEffect(() => () => {
+    if (raf.current != null) cancelAnimationFrame(raf.current);
+  }, []);
+
+  const paint = () => {
+    if (wheelRef.current) wheelRef.current.style.transform = `rotate(${angle.current}deg)`;
+  };
 
   // Çark dönerken yavaşlayan çıtçıt sesi — gerçek çarkın mandalı gibi.
   useEffect(() => {
@@ -67,6 +85,12 @@ export function WheelGame({
     };
   }, [spinning]);
 
+  /**
+   * Tıklandığı an çark dönmeye başlar; sunucu yanıtı gelene kadar sabit
+   * hızda döner. Yanıt gelince, o anki hızından yumuşakça yavaşlayarak
+   * sunucunun belirlediği dilimde durur. Sonuç yine tamamen sunucuda
+   * üretilir — ekrandaki dönüş yalnızca bekleme süresini gizler.
+   */
   async function spin() {
     if (spinning) return;
     sfx.prime();
@@ -75,19 +99,57 @@ export function WheelGame({
     setResult(null);
     setSpinning(true);
 
+    const started = performance.now();
+    let last = started;
+    // Sunucu yanıtı gelince doldurulur; döngü yavaşlama evresine geçer.
+    let landing: { from: number; distance: number; at: number; duration: number } | null = null;
+    let onLanded: (() => void) | null = null;
+    let pending: { target: number } | null = null;
+
+    const frame = (now: number) => {
+      if (landing) {
+        const u = Math.min(1, (now - landing.at) / landing.duration);
+        // Kübik yavaşlama: başlangıç eğimi = sabit dönüş hızı, kesintisiz geçiş.
+        angle.current = landing.from + landing.distance * (1 - Math.pow(1 - u, 3));
+        paint();
+        if (u >= 1) {
+          raf.current = null;
+          onLanded?.();
+          return;
+        }
+      } else {
+        const dt = (now - last) / 1000;
+        const ramp = Math.min(1, (now - started) / RAMP_MS);
+        angle.current += CRUISE_DEG_S * ramp * dt;
+        paint();
+
+        // Yanıt geldi ve tam hıza ulaşıldıysa yavaşlamayı planla.
+        if (pending && ramp >= 1) {
+          const current = ((angle.current % 360) + 360) % 360;
+          let distance = (((360 - pending.target - current) % 360) + 360) % 360;
+          // Yavaşlama süresi = 3 × mesafe / hız; en az MIN_DECEL_MS olsun.
+          const minDistance = (CRUISE_DEG_S * MIN_DECEL_MS) / 3000;
+          while (distance < minDistance) distance += 360;
+          landing = {
+            from: angle.current,
+            distance,
+            at: now,
+            duration: (3000 * distance) / CRUISE_DEG_S,
+          };
+        }
+      }
+      last = now;
+      raf.current = requestAnimationFrame(frame);
+    };
+    raf.current = requestAnimationFrame(frame);
+
     try {
       const res = await post<SpinResponse>("/api/games/wheel/bet", {
         bet,
         idempotencyKey: newKey("wheel"),
       });
 
-      // Sunucunun verdiği noktayı çarkın tepesine getir; üstüne birkaç tam tur ekle.
-      const target = landingAngle(res.result.segment, res.result.spinOffset);
-      const current = ((rotation % 360) + 360) % 360;
-      const delta = (360 - target - current + 360) % 360;
-      setRotation((r) => r + 360 * 5 + delta);
-
-      timer.current = setTimeout(() => {
+      onLanded = () => {
         setResult({ ...res, stake: bet });
         setSpinning(false);
         onSettled(res.balance);
@@ -98,10 +160,19 @@ export function WheelGame({
         if (res.newBadges.length > 0) setTimeout(() => sfx.badge(), 500);
 
         void onReload();
-      }, SPIN_MS);
+      };
+      // Sunucunun verdiği noktayı çarkın tepesine getir.
+      pending = { target: landingAngle(res.result.segment, res.result.spinOffset) };
     } catch (e) {
-      setSpinning(false);
-      setError(e instanceof Error ? e.message : "Bir hata oldu");
+      // Tur oynanmadı: çark bir anda donmasın, kısa bir yavaşlamayla dursun.
+      const message = e instanceof Error ? e.message : "Bir hata oldu";
+      onLanded = () => {
+        setSpinning(false);
+        setError(message);
+      };
+      const now = performance.now();
+      const speed = CRUISE_DEG_S * Math.min(1, (now - started) / RAMP_MS);
+      landing = { from: angle.current, distance: speed * 0.25, at: now, duration: 750 };
     }
   }
 
@@ -140,10 +211,7 @@ export function WheelGame({
             <svg
               viewBox="-105 -105 210 210"
               className="size-full"
-              style={{
-                transform: `rotate(${rotation}deg)`,
-                transition: spinning ? `transform ${SPIN_MS}ms cubic-bezier(0.12, 0.7, 0.12, 1)` : "none",
-              }}
+              ref={wheelRef}
             >
               {/* Her ödül için bir degrade: göbekte koyu, kenarda parlak. */}
               <defs>

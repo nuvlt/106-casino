@@ -30,6 +30,8 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       role: "PLAYER" | "ADMIN";
+      /** Askıya alınmış hesap — API katmanı her istekte bunu reddeder. */
+      suspended: boolean;
     };
   }
 }
@@ -67,24 +69,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Asıl kontrol: Workspace'in imzaladığı hosted-domain claim'i.
       const hd = (profile as { hd?: string }).hd;
-   console.error("[debug-giris]", JSON.stringify({ email, hd, allowed: env.allowedDomain, verified: profile?.email_verified }));
-   return hd === env.allowedDomain;
+      return hd === env.allowedDomain;
     },
 
+    /**
+     * Veritabanı oturumunda bu fonksiyon her istekte, kullanıcı satırı
+     * taze okunmuşken çalışır. Rol ve askı durumu buradan taşınır; API
+     * katmanı kullanıcıyı ikinci kez sorgulamaz (her istekte bir
+     * veritabanı gidiş-dönüşü daha az).
+     *
+     * Rolün tek kaynağı ADMIN_EMAILS: listeye eklenen kişi bir sonraki
+     * istekte yönetici olur, çıkarılan anında yetkisini kaybeder —
+     * çıkış/giriş gerekmez.
+     */
     async session({ session, user }) {
+      const row = user as { role?: "PLAYER" | "ADMIN"; suspendedAt?: Date | null };
       session.user.id = user.id;
-      session.user.role = (user as { role?: "PLAYER" | "ADMIN" }).role ?? "PLAYER";
+      session.user.role = isAdminEmail(user.email) ? "ADMIN" : "PLAYER";
+      session.user.suspended = row.suspendedAt != null;
       return session;
     },
   },
   events: {
     async signIn({ user }) {
       if (!user.id) return;
-      // ADMIN_EMAILS listesindekiler yönetici rolünü otomatik alır.
-      const role = isAdminEmail(user.email) ? "ADMIN" : undefined;
+      // Veritabanındaki rol yalnızca backoffice listesinde görünsün diye
+      // eşitlenir; yetki kararı her istekte ADMIN_EMAILS'ten verilir.
+      const role = isAdminEmail(user.email) ? "ADMIN" : "PLAYER";
       await db
         .update(users)
-        .set({ lastSeenAt: new Date(), ...(role ? { role } : {}) })
+        .set({ lastSeenAt: new Date(), role })
         .where(eq(users.id, user.id));
     },
   },

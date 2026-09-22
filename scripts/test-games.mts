@@ -11,9 +11,7 @@
  *   • rozet ve görev ilerlemesi turun transaction'ı içinde yazılır
  */
 
-import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
-import { drizzle } from "drizzle-orm/pglite";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "../src/db/schema.ts";
 import type { Db } from "../src/db/types.ts";
@@ -32,6 +30,7 @@ import { crashMultAt, crashPoint, hlNewRound, hlStep, resolveWheel } from "../sr
 import { describe, type HiloSecret } from "../src/lib/hilo.ts";
 import { seedBadges } from "../src/lib/badges.ts";
 import { COIN } from "../src/lib/games/config.ts";
+import { makeTestDb } from "./test-db.mts";
 
 let passed = 0;
 let failed = 0;
@@ -40,15 +39,7 @@ const check = (name: string, ok: boolean, detail = "") => {
   ok ? passed++ : failed++;
 };
 
-const client = new PGlite();
-await client.waitReady;
-for (const f of readdirSync("drizzle").filter((x) => x.endsWith(".sql")).sort()) {
-  for (const stmt of readFileSync(`drizzle/${f}`, "utf8")
-    .split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean)) {
-    await client.exec(stmt);
-  }
-}
-const db = drizzle(client, { schema }) as unknown as Db;
+const { db, close } = await makeTestDb();
 await db.transaction(async (tx) => seedBadges(tx as never));
 
 await db.insert(schema.users).values({ id: "u1", email: "onur@106dijital.com", name: "Onur T." });
@@ -297,6 +288,6 @@ check("ledger toplamı = bakiye (rozet ödülleri dahil)", sum!.total === u!.bal
 const openLeft = await db.select().from(schema.rounds).where(eq(schema.rounds.state, "OPEN"));
 check("açık tur kalmadı", openLeft.length === 0, `${openLeft.length} açık`);
 
-await client.close();
+await close();
 console.log(`\n${passed} geçti, ${failed} başarısız`);
 process.exit(failed === 0 ? 0 : 1);

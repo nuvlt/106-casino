@@ -4,9 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db, ensureSchema } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { ensureSchema } from "@/db";
 
 export interface SessionUser {
   id: string;
@@ -29,30 +27,24 @@ export function fail(status: number, message: string, code = "ERROR") {
   return NextResponse.json({ error: message, code }, { status });
 }
 
-/** Oturumu doğrular ve kullanıcının askıda olmadığını garanti eder. */
+/**
+ * Oturumu doğrular ve kullanıcının askıda olmadığını garanti eder.
+ *
+ * Oturum veritabanında tutulduğu için auth() kullanıcı satırını zaten
+ * taze okur (bkz. auth.ts session callback); rol ve askı bilgisi oradan
+ * gelir. Burada ayrıca kullanıcı tablosuna gitmek, her istekte fazladan
+ * bir gidiş-dönüş demekti.
+ */
 export async function requireUser(): Promise<SessionUser> {
   // Gömülü (yerel) kipte şema ilk istekte hazırlanır; gerçek Postgres'te
   // bu çağrı hiçbir şey yapmaz.
   await ensureSchema();
   const session = await auth();
-  if (!session?.user?.id) throw new ApiError(401, "Giriş yapmalısınız", "UNAUTHENTICATED");
+  const user = session?.user;
+  if (!user?.id) throw new ApiError(401, "Giriş yapmalısınız", "UNAUTHENTICATED");
+  if (user.suspended) throw new ApiError(403, "Hesabınız askıya alınmış", "SUSPENDED");
 
-  const [user] = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      name: users.name,
-      role: users.role,
-      suspendedAt: users.suspendedAt,
-    })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-
-  if (!user) throw new ApiError(401, "Kullanıcı bulunamadı", "UNAUTHENTICATED");
-  if (user.suspendedAt) throw new ApiError(403, "Hesabınız askıya alınmış", "SUSPENDED");
-
-  return { id: user.id, email: user.email, name: user.name, role: user.role };
+  return { id: user.id, email: user.email, name: user.name ?? null, role: user.role };
 }
 
 export async function requireAdmin(): Promise<SessionUser> {

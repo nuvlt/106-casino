@@ -76,6 +76,93 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   );
 }
 
+interface Health {
+  region: string;
+  instanceAgeSec: number;
+  dbMs: number;
+  redisMs: number | null;
+}
+
+const REGION_CITY: Record<string, string> = {
+  fra1: "Frankfurt",
+  cdg1: "Paris",
+  lhr1: "Londra",
+  dub1: "Dublin",
+  arn1: "Stockholm",
+  iad1: "Washington",
+  cle1: "Cleveland",
+  pdx1: "Portland",
+  sfo1: "San Francisco",
+  sin1: "Singapur",
+};
+
+/**
+ * Sunucu fonksiyonu ile veritabanı arasındaki gecikme. Bir tur sunucuda
+ * yaklaşık on gidiş-dönüş yapar; buradaki sayı büyükse (ör. 80 ms)
+ * oyunlar da o oranda yavaşlar. Çözüm: Vercel ile Railway'i aynı bölgeye
+ * almak (bkz. README → "Hız").
+ */
+function SystemCard() {
+  const health = useApi<Health>("/api/health");
+  const h = health.data;
+  const tone = (ms: number | null | undefined) =>
+    ms == null ? "text-muted" : ms <= 12 ? "text-win" : ms <= 40 ? "text-gold" : "text-lose";
+
+  return (
+    <Card>
+      <SectionTitle
+        right={
+          <button
+            type="button"
+            onClick={() => void health.reload()}
+            className="text-[11px] font-black text-white/60 hover:text-white"
+          >
+            yeniden ölç
+          </button>
+        }
+      >
+        Sistem
+      </SectionTitle>
+      {h ? (
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-2xl bg-black/30 p-3 ring-1 ring-white/8">
+              <div className="text-[10px] font-black uppercase tracking-wide text-muted">Sunucu</div>
+              <div className="font-display mt-0.5 text-base font-black text-white">
+                {REGION_CITY[h.region] ?? h.region}
+              </div>
+              <div className="text-[10px] text-muted">{h.region}</div>
+            </div>
+            <div className="rounded-2xl bg-black/30 p-3 ring-1 ring-white/8">
+              <div className="text-[10px] font-black uppercase tracking-wide text-muted">Veritabanı</div>
+              <div className={`tabular font-display mt-0.5 text-xl font-black ${tone(h.dbMs)}`}>
+                {h.dbMs} ms
+              </div>
+              <div className="text-[10px] text-muted">gidiş-dönüş</div>
+            </div>
+            <div className="rounded-2xl bg-black/30 p-3 ring-1 ring-white/8">
+              <div className="text-[10px] font-black uppercase tracking-wide text-muted">Redis</div>
+              <div className={`tabular font-display mt-0.5 text-xl font-black ${tone(h.redisMs)}`}>
+                {h.redisMs == null ? "—" : `${h.redisMs} ms`}
+              </div>
+              <div className="text-[10px] text-muted">{h.redisMs == null ? "ulaşılamadı" : "gidiş-dönüş"}</div>
+            </div>
+          </div>
+          <p className="mt-2 text-[10px] leading-relaxed text-muted">
+            {h.dbMs <= 12
+              ? "Sunucu ile veritabanı aynı bölgede — oyunlar hızlı çalışır."
+              : "Sunucu ile veritabanı farklı bölgelerde görünüyor. Bir tur ~10 gidiş-dönüş yaptığı için oyunlar bu sayının yaklaşık 10 katı kadar gecikir."}
+          </p>
+        </>
+      ) : health.error ? (
+        <p className="text-sm text-lose">{health.error}</p>
+      ) : (
+        <Skeleton className="h-20" />
+      )}
+    </Card>
+  );
+}
+
 export function AdminScreen() {
   const overview = useApi<Overview>("/api/admin/overview", { refreshMs: 30_000 });
   const players = useApi<{ players: Player[] }>("/api/admin/players");
@@ -188,6 +275,8 @@ export function AdminScreen() {
               turdan sonra ve 3 puandan fazla sapmada çıkar.
             </p>
           </Card>
+
+          <SystemCard />
 
           <Card>
             <SectionTitle right={o.integrity.ok ? "tutuyor ✓" : "TUTMUYOR"}>

@@ -8,6 +8,7 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { LiveFeed } from "@/components/LiveFeed";
 import { Missions } from "@/components/Missions";
 import { OpenRoundBanner } from "@/components/OpenRoundBanner";
+import { QuickNav } from "@/components/QuickNav";
 import { Card, SectionTitle, Skeleton } from "@/components/ui";
 import { useMe } from "@/hooks/useMe";
 
@@ -31,6 +32,7 @@ export function Home() {
   return (
     <main className="mx-auto w-full max-w-lg px-4 pb-16 lg:max-w-6xl lg:px-6">
       <BalanceBar balance={me?.wallet.balance} streakDay={me?.streak.day} />
+      <QuickNav isAdmin={me?.user.role === "ADMIN"} />
 
       <LiveFeed />
       <OpenRoundBanner round={me?.openRound ?? null} />
@@ -40,7 +42,11 @@ export function Home() {
         <div className="space-y-4">
           {loading && !me ? <Skeleton className="h-32" /> : me ? <Hero me={me} /> : null}
 
-          {me ? <Missions missions={me.missions} onClaimed={onClaimed} /> : null}
+          {me ? (
+            <Missions missions={me.missions} onClaimed={onClaimed} />
+          ) : loading ? (
+            <Skeleton className="h-16" />
+          ) : null}
 
           <section>
             <SectionTitle right={`${8} oyun`}>Oyunlar</SectionTitle>
@@ -119,6 +125,12 @@ export function Home() {
                 Turlarını kendin doğrula →
               </Link>
             </Card>
+          </aside>
+        ) : loading ? (
+          // Yüklenirken yan sütunun yeri tutulur; veri gelince sayfa zıplamaz.
+          <aside className="mt-4 space-y-4 lg:mt-0">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-32" />
           </aside>
         ) : null}
       </div>
