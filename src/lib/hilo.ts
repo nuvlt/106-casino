@@ -7,7 +7,7 @@
  */
 
 import { hlOdds, hlRank, hlSuit, type HlState } from "@/lib/games/engine";
-import { RTP_BPS } from "@/lib/games/config";
+import { HL_MAX_MULT, RTP_BPS } from "@/lib/games/config";
 
 const RANK_LABELS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const SUIT_LABELS = ["♣", "♦", "♥", "♠"];
@@ -44,7 +44,8 @@ export function describe(secret: HiloSecret): HiloPublic {
   const odds = hlOdds(state);
   const edge = secret.position === 0 ? RTP_BPS / 10_000 : 1;
 
-  const stepMult = (p: number) => (p > 0 ? secret.mult * (1 / p) * edge : null);
+  const stepMult = (p: number) =>
+    p > 0 ? Math.min(secret.mult * (1 / p) * edge, HL_MAX_MULT) : null;
 
   return {
     cards: secret.deck.slice(0, secret.position + 1).map((value) => ({ value, label: cardLabel(value) })),

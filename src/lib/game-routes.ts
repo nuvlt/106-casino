@@ -29,6 +29,7 @@ const HTTP_FOR_WALLET: Record<string, number> = {
   ROUND_OPEN: 409,
   ROUND_CLOSED: 409,
   NOT_FOUND: 404,
+  DUPLICATE_KEY: 409,
 };
 
 export interface GameContext<T> {

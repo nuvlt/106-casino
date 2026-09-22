@@ -7,7 +7,8 @@
  */
 
 import { and, eq } from "drizzle-orm";
-import { seedPairs } from "@/db/schema";
+import { rounds, seedPairs } from "@/db/schema";
+import { WalletError } from "@/lib/wallet";
 import type { Db, DbOrTx } from "@/db/types";
 import { generateClientSeed, generateServerSeed, hashServerSeed } from "@/lib/games/rng";
 
@@ -62,11 +63,30 @@ export async function rotateSeed(
   newClientSeed?: string,
 ): Promise<{ revealed: { serverSeed: string; serverSeedHash: string; nonce: number } | null; next: PublicSeedInfo }> {
   return db.transaction(async (tx) => {
+    // Aktif tohum satırı kilitlenir. Bahis de nonce'u ilerletirken aynı
+    // satırı kilitlediği için, eşzamanlı bir tur açılışı ile döndürme
+    // sıraya girer; aşağıdaki açık tur kontrolü ikisinin arasına sızamaz.
     const [old] = await tx
       .select()
       .from(seedPairs)
       .where(and(eq(seedPairs.userId, userId), eq(seedPairs.active, true)))
+      .limit(1)
+      .for("update");
+
+    // Açık bir tur (Crash, Yüksek/Alçak) varken tohum AÇILAMAZ: açılan
+    // sunucu tohumu o turun henüz oynanmamış kısmını (patlama noktası,
+    // destedeki sıradaki kartlar) hesaplanabilir kılar.
+    const [open] = await tx
+      .select({ id: rounds.id })
+      .from(rounds)
+      .where(and(eq(rounds.userId, userId), eq(rounds.state, "OPEN")))
       .limit(1);
+    if (open) {
+      throw new WalletError(
+        "Devam eden bir turun varken tohum döndürülemez — önce turu bitir",
+        "ROUND_OPEN",
+      );
+    }
 
     if (old) {
       await tx

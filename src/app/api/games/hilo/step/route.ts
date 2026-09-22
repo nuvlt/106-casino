@@ -12,7 +12,8 @@ import { getOpenRound, settleOpenRound, updateOpenRound } from "@/lib/wallet";
 import { hlStep } from "@/lib/games/engine";
 import { describe, type HiloSecret } from "@/lib/hilo";
 import { hiloStepParams } from "@/lib/validation";
-import { HL_MAX_STEPS } from "@/lib/games/config";
+import { ApiError } from "@/lib/api";
+import { HL_MAX_MULT, HL_MAX_STEPS } from "@/lib/games/config";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +26,17 @@ export const POST = gameRoute(
     const before = describe(secret);
     const p = body.guess === "higher" ? before.odds.higher : before.odds.lower;
 
+    // Reddedilen adımlar HTTP hatası olarak döner; tur açık kalır. (Önceden
+    // 200 ile hata gövdesi dönüyordu ve arayüz bunu "kaybettin" sanıyordu.)
     // Olasılığı sıfır olan taraf seçilemez (istemci o düğmeyi zaten kapatır).
     if (p <= 0) {
-      return { error: "Bu tahmin imkânsız", code: "IMPOSSIBLE_GUESS" };
+      throw new ApiError(409, "Bu tahmin imkânsız", "IMPOSSIBLE_GUESS");
     }
     if (secret.position >= HL_MAX_STEPS) {
-      return { error: "Adım sınırına ulaşıldı, çekim yapın", code: "MAX_STEPS" };
+      throw new ApiError(409, "Adım sınırına ulaşıldı, çekim yapın", "MAX_STEPS");
+    }
+    if (secret.mult >= HL_MAX_MULT) {
+      throw new ApiError(409, "Tavan çarpana ulaştın, çekim yapın", "MAX_MULT");
     }
 
     const result = hlStep({ deck: secret.deck, position: secret.position, mult: secret.mult }, body.guess);
@@ -55,7 +61,7 @@ export const POST = gameRoute(
     const next: HiloSecret = {
       deck: secret.deck,
       position: result.state.position,
-      mult: result.state.mult,
+      mult: Math.min(result.state.mult, HL_MAX_MULT),
     };
     const publicState = describe(next);
 

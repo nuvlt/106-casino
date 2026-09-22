@@ -53,7 +53,8 @@ export class WalletError extends Error {
       | "INVALID_BET"
       | "ROUND_OPEN"
       | "ROUND_CLOSED"
-      | "NOT_FOUND",
+      | "NOT_FOUND"
+      | "DUPLICATE_KEY",
   ) {
     super(message);
   }
@@ -160,20 +161,38 @@ async function assertNoOpenRound(tx: Tx, userId: string): Promise<void> {
  * artışı da kalıcı olmaz, yani sıralı hâliyle birebir aynı sonuç.
  */
 async function openBet(tx: Tx, userId: string, bet: number) {
+  // SIRA ÖNEMLİ: önce bakiye düşümü gönderilir. O UPDATE kullanıcı
+  // satırını transaction sonuna kadar kilitler; aynı kullanıcının
+  // eşzamanlı ikinci bahsi burada bekler ve "açık tur var mı" sorusunu
+  // ancak ilki bittikten sonra, onun açtığı turu görerek sorar. Böylece
+  // iki sekmeden aynı anda iki açık tur başlatılamaz.
+  const debited = debit(tx, userId, bet);
+  const noOpen = assertNoOpenRound(tx, userId);
+  const nonce = consumeNonce(tx, userId);
+
   // together: biri hata verse de diğerleri transaction içinde biter
-  // (bkz. lib/together.ts); ilk hata dizideki sıraya göre fırlatılır.
-  const [, afterDebit, seed] = await together([
-    assertNoOpenRound(tx, userId),
-    debit(tx, userId, bet),
-    consumeNonce(tx, userId),
-  ]);
+  // (bkz. lib/together.ts). Hata önceliği dizideki sıraya göre:
+  // "açık tur var" mesajı "yetersiz bakiye"den önce gelir.
+  const [, afterDebit, seed] = await together([noOpen, debited, nonce]);
   return { afterDebit, seed };
+}
+
+/**
+ * İstek anahtarı tüm kullanıcılar arasında tekildir. Başka birinin
+ * anahtarıyla gelen istek o kişinin turunu (sonuç, tohum bilgisi)
+ * görmemeli; çakışma olarak reddedilir.
+ */
+function assertOwnKey(ownerId: string, userId: string): void {
+  if (ownerId !== userId) {
+    throw new WalletError("Bu istek anahtarı kullanılamaz, sayfayı yenileyin", "DUPLICATE_KEY");
+  }
 }
 
 /** Idempotency: aynı anahtarla oynanmış tur varsa onu döndür. */
 async function findByKey(db: Db, userId: string, key: string): Promise<RoundResult | null> {
   const [dup] = await db.select().from(rounds).where(eq(rounds.idempotencyKey, key)).limit(1);
   if (!dup) return null;
+  assertOwnKey(dup.userId, userId);
 
   const [user] = await db
     .select({ balance: users.balance })
@@ -522,6 +541,7 @@ export async function openRound(
     .limit(1);
 
   if (dup) {
+    assertOwnKey(dup.userId, opts.userId);
     const [user] = await db
       .select({ balance: users.balance })
       .from(users)

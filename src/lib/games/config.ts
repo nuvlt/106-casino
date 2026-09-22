@@ -160,3 +160,10 @@ export const MYSTERY_BOX_COUNT = 9; // ekranda 9 kutu gösterilir, biri seçilir
  */
 export const HL_DECK_SIZE = 52;
 export const HL_MAX_STEPS = 25;
+/**
+ * Yüksek/Alçak birikmiş çarpan tavanı — Crash'in tavanıyla aynı (10.000x).
+ * Tavan olmadan uzun ve şanslı bir zincir, tutarları saklayan 32-bit
+ * sütunları taşırabiliyordu (ödeme yazılamaz, tur kilitli kalırdı).
+ * Tavana ulaşma olasılığı ihmal edilebilir; RTP'ye etkisi yok denecek kadar az.
+ */
+export const HL_MAX_MULT = 10_000;
