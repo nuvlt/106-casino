@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { BalanceBar } from "@/components/BalanceBar";
 import { Card, SectionTitle, Skeleton } from "@/components/ui";
@@ -202,13 +201,6 @@ export function HistoryScreen() {
           </div>
         )}
 
-        <Link
-          href="/dogrula"
-          className="block rounded-2xl bg-white/6 py-2.5 text-center text-xs font-black text-white/70
-                     ring-1 ring-white/10 transition hover:bg-white/12"
-        >
-          Bu turların adil olduğunu kendin doğrula →
-        </Link>
       </div>
     </main>
   );

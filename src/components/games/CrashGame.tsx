@@ -500,7 +500,7 @@ export function CrashGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">çarpanı sunucu hesaplar · provably fair</Pill>
+        <Pill tone="info">çarpanı sunucu hesaplar</Pill>
       </div>
       </div>
     </div>

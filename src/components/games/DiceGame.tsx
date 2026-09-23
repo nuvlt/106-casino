@@ -304,7 +304,7 @@ export function DiceGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">zar sunucuda atılır · provably fair</Pill>
+        <Pill tone="info">zar sunucuda atılır</Pill>
       </div>
       </div>
     </div>

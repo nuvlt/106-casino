@@ -233,7 +233,7 @@ export function MysteryGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">kutular sunucuda doldurulur · provably fair</Pill>
+        <Pill tone="info">kutular sunucuda doldurulur</Pill>
       </div>
       </div>
     </div>

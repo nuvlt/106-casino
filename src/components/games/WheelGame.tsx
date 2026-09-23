@@ -390,7 +390,7 @@ export function WheelGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">sonuç sunucuda üretilir · provably fair</Pill>
+        <Pill tone="info">sonuç sunucuda üretilir</Pill>
       </div>
       </div>
     </div>

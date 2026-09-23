@@ -13,7 +13,6 @@ export function QuickNav({ isAdmin }: { isAdmin: boolean }) {
     { href: "/gecmis", icon: "🕘", label: "Geçmişim" },
     { href: "/siralama", icon: "🏆", label: "Sıralama" },
     { href: "/rozetler", icon: "🎖️", label: "Rozetler" },
-    { href: "/dogrula", icon: "🛡️", label: "Doğrula" },
     ...(isAdmin ? [{ href: "/admin" as Route, icon: "⚙️", label: "Yönetim" }] : []),
   ];
 

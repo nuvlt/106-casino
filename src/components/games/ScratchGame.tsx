@@ -226,7 +226,7 @@ export function ScratchGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">sonuç kart alınırken belirlenir · provably fair</Pill>
+        <Pill tone="info">sonuç kart alınırken belirlenir</Pill>
       </div>
       </div>
     </div>

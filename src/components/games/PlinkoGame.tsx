@@ -407,14 +407,14 @@ export function PlinkoGame({
         <p className="mt-2 text-xs leading-relaxed text-muted">
           Birden fazla top attığında her top{" "}
           <strong className="text-white/80">ayrı bir tur</strong> olarak oynanır: kendi bahsi, kendi
-          defter kaydı ve kendi provably-fair doğrulaması olur. Yani on top atmak, tek tek on tur
+          ve kendi defter kaydı olur. Yani on top atmak, tek tek on tur
           oynamakla birebir aynı — beklenen getiri değişmez, yalnızca sonuç daha çabuk ortalamaya
           yaklaşır.
         </p>
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">yol sunucuda üretilir · provably fair</Pill>
+        <Pill tone="info">yol sunucuda üretilir</Pill>
       </div>
       </div>
     </div>

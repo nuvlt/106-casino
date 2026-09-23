@@ -332,7 +332,7 @@ export function HiloGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">deste sunucuda karılır · provably fair</Pill>
+        <Pill tone="info">deste sunucuda karılır</Pill>
       </div>
       </div>
     </div>

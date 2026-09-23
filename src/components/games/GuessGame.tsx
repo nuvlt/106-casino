@@ -229,7 +229,7 @@ export function GuessGame({
       </Card>
 
       <div className="flex justify-center">
-        <Pill tone="info">çekiliş sunucuda yapılır · provably fair</Pill>
+        <Pill tone="info">çekiliş sunucuda yapılır</Pill>
       </div>
       </div>
     </div>

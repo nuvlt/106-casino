@@ -96,35 +96,6 @@ export function Home() {
               </Link>
             </Card>
 
-            <Card>
-              <SectionTitle right="provably fair">Adalet</SectionTitle>
-              <p className="mb-2 text-xs leading-relaxed text-muted">
-                Her turun sonucu, bahisten <strong className="text-white/85">önce</strong> yayınlanan
-                bir sunucu tohumundan üretilir. Tohumu döndürdüğünde eskisi açılır ve geçmiş
-                turlarının tamamını kendin hesaplayabilirsin.
-              </p>
-              <div className="tabular space-y-1 rounded-2xl bg-black/35 p-3 text-[11px] ring-1 ring-white/6">
-                <div className="flex gap-2">
-                  <span className="w-24 shrink-0 text-muted">sunucu hash</span>
-                  <span className="truncate text-white/70">{me.fairness.serverSeedHash}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="w-24 shrink-0 text-muted">senin tohumun</span>
-                  <span className="truncate text-white/70">{me.fairness.clientSeed}</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="w-24 shrink-0 text-muted">tur sayacı</span>
-                  <span className="text-white/70">{me.fairness.nonce}</span>
-                </div>
-              </div>
-              <Link
-                href="/dogrula"
-                className="mt-2.5 block rounded-2xl bg-white/6 py-2.5 text-center text-xs font-black
-                           text-white/70 ring-1 ring-white/10 transition hover:bg-white/12 active:bg-white/12"
-              >
-                Turlarını kendin doğrula →
-              </Link>
-            </Card>
           </aside>
         ) : loading ? (
           // Yüklenirken yan sütunun yeri tutulur; veri gelince sayfa zıplamaz.
