@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN, MIN_BET, PLINKO_BALL_CHOICES, PLINKO_TABLES } from "@/lib/games/config";
@@ -367,20 +368,22 @@ export function PlinkoGame({
         disabled={dropping}
       />
 
-      <Button
-        onClick={drop}
-        disabled={dropping || tooExpensive}
-        tone="gold"
-        className="w-full !py-4 !text-lg"
-      >
-        {dropping
-          ? "Düşüyor…"
-          : tooExpensive
-            ? "Bakiye yetersiz"
-            : balls > 1
-              ? `${balls} TOP BIRAK`
-              : "TOPU BIRAK"}
-      </Button>
+      <ActionDock>
+        <Button
+          onClick={drop}
+          disabled={dropping || tooExpensive}
+          tone="gold"
+          className="w-full !py-4 !text-lg"
+        >
+          {dropping
+            ? "Düşüyor…"
+            : tooExpensive
+              ? "Bakiye yetersiz"
+              : balls > 1
+                ? `${balls} TOP BIRAK`
+                : "TOPU BIRAK"}
+        </Button>
+      </ActionDock>
 
       {history.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">

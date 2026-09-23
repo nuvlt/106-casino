@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { ResultFlash } from "@/components/games/ResultFlash";
 import { newKey, post } from "@/hooks/useApi";
@@ -52,8 +53,14 @@ export function WheelGame({
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<{ mult: number; tier: number }[]>([]);
   // Çarkın açısı React state'i yerine ref'te tutulur ve her karede doğrudan
-  // SVG'ye yazılır: 60 kare/sn'de koca bir SVG'yi yeniden çizdirmemek için.
-  const wheelRef = useRef<SVGSVGElement | null>(null);
+  // yazılır: 60 kare/sn'de koca bir SVG'yi yeniden çizdirmemek için.
+  //
+  // Döndürülen şey SVG'nin kendisi değil, onu saran bir div'dir ve bu div
+  // `will-change: transform` ile ayrı bir GPU katmanına alınır. SVG'yi
+  // doğrudan döndürmek iOS Safari'de her karede 25 degradeli dilimi ve
+  // yazıları yeniden rasterleştirtiyordu — mobilde "kasma" hissinin sebebi
+  // buydu. Katman bir kez çizilir, sonra yalnızca GPU'da döndürülür.
+  const wheelRef = useRef<HTMLDivElement | null>(null);
   const angle = useRef(0);
   const raf = useRef<number | null>(null);
 
@@ -62,7 +69,9 @@ export function WheelGame({
   }, []);
 
   const paint = () => {
-    if (wheelRef.current) wheelRef.current.style.transform = `rotate(${angle.current}deg)`;
+    if (wheelRef.current) {
+      wheelRef.current.style.transform = `rotate(${angle.current}deg) translateZ(0)`;
+    }
   };
 
   // Çark dönerken yavaşlayan çıtçıt sesi — gerçek çarkın mandalı gibi.
@@ -208,11 +217,8 @@ export function WheelGame({
         {/* dış pirinç çember + perçinler */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[#fff0bf] via-[#d9a13a] to-[#8d6205] p-[9px] shadow-[0_22px_60px_rgba(0,0,0,0.65)]">
           <div className="relative size-full overflow-hidden rounded-full bg-[#07120c] shadow-[inset_0_0_30px_rgba(0,0,0,0.9)]">
-            <svg
-              viewBox="-105 -105 210 210"
-              className="size-full"
-              ref={wheelRef}
-            >
+            <div ref={wheelRef} className="size-full" style={{ willChange: "transform" }}>
+            <svg viewBox="-105 -105 210 210" className="size-full">
               {/* Her ödül için bir degrade: göbekte koyu, kenarda parlak. */}
               <defs>
                 {TIER_STYLE.map((t, i) => (
@@ -303,6 +309,7 @@ export function WheelGame({
                 );
               })}
             </svg>
+            </div>
 
             {/* cam yansıması — çarkın üstünde sabit durur, dönmez */}
             <div className="pointer-events-none absolute inset-0 rounded-full bg-[linear-gradient(200deg,rgba(255,255,255,0.22)_0%,transparent_38%)]" />
@@ -342,14 +349,16 @@ export function WheelGame({
       <div className="space-y-4 lg:sticky lg:top-20">
       <BetControls bet={bet} setBet={setBet} balance={balance} disabled={spinning} />
 
-      <Button
-        onClick={spin}
-        disabled={spinning || bet > balance}
-        tone="gold"
-        className="w-full !py-4 !text-lg"
-      >
-        {spinning ? "Dönüyor…" : bet > balance ? "Bakiye yetersiz" : "ÇEVİR 🎡"}
-      </Button>
+      <ActionDock>
+        <Button
+          onClick={spin}
+          disabled={spinning || bet > balance}
+          tone="gold"
+          className="w-full !py-4 !text-lg"
+        >
+          {spinning ? "Dönüyor…" : bet > balance ? "Bakiye yetersiz" : "ÇEVİR 🎡"}
+        </Button>
+      </ActionDock>
 
       {history.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
@@ -384,8 +393,8 @@ export function WheelGame({
         </ul>
         <p className="mt-3 text-[11px] leading-relaxed text-muted">
           Dilimler <strong className="text-white/70">gerçek olasılıkla orantılı</strong> çizilir.
-          50x dilimi bu yüzden kıl kadar incedir — binde 2 ihtimal, çizimde de tam olarak o kadar
-          yer kaplıyor.
+          100x dilimi bu yüzden kıl kadar incedir — on binde 5 ihtimal, çizimde de tam olarak o
+          kadar yer kaplıyor. Çevirmelerin yaklaşık üçte biri kârla biter.
         </p>
       </Card>
 

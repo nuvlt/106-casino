@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN, GUESS_MAX_PICKS, GUESS_RANGE, RTP_BPS } from "@/lib/games/config";
@@ -194,14 +195,16 @@ export function GuessGame({
         <p className="rounded-2xl bg-lose/15 px-4 py-2.5 text-center text-sm text-lose">{error}</p>
       ) : null}
 
-      <Button
-        onClick={draw}
-        disabled={drawing || picks.length === 0 || bet > balance}
-        tone="gold"
-        className="w-full !py-4 !text-lg"
-      >
-        {drawing ? "Çekiliyor…" : picks.length === 0 ? "Sayı seç" : bet > balance ? "Bakiye yetersiz" : "ÇEKİLİŞ"}
-      </Button>
+      <ActionDock>
+        <Button
+          onClick={draw}
+          disabled={drawing || picks.length === 0 || bet > balance}
+          tone="gold"
+          className="w-full !py-4 !text-lg"
+        >
+          {drawing ? "Çekiliyor…" : picks.length === 0 ? "Sayı seç" : bet > balance ? "Bakiye yetersiz" : "ÇEKİLİŞ"}
+        </Button>
+      </ActionDock>
 
       {history.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">

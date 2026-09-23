@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN } from "@/lib/games/config";
@@ -262,47 +263,49 @@ export function HiloGame({
       <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- KONTROLLER --- */}
       {playing ? (
-        <>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => step("higher")}
-              disabled={busy || state!.odds.higher === 0}
-              tone="felt"
-              className="flex-1 !py-4"
-            >
-              <span className="block text-sm">▲ YÜKSEK</span>
-              <span className="block text-[11px] font-bold opacity-80">
-                {state!.odds.higher === 0 ? "imkânsız" : `%${(state!.odds.higher * 100).toFixed(0)} · ${fmtMult(state!.nextMult.higher ?? 0)}`}
-              </span>
-            </Button>
-            <Button
-              onClick={() => step("lower")}
-              disabled={busy || state!.odds.lower === 0}
-              tone="ruby"
-              className="flex-1 !py-4"
-            >
-              <span className="block text-sm">▼ ALÇAK</span>
-              <span className="block text-[11px] font-bold opacity-80">
-                {state!.odds.lower === 0 ? "imkânsız" : `%${(state!.odds.lower * 100).toFixed(0)} · ${fmtMult(state!.nextMult.lower ?? 0)}`}
-              </span>
-            </Button>
-          </div>
+        <ActionDock>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => step("higher")}
+                disabled={busy || state!.odds.higher === 0}
+                tone="felt"
+                className="flex-1 !py-4"
+              >
+                <span className="block text-sm">▲ YÜKSEK</span>
+                <span className="block text-[11px] font-bold opacity-80">
+                  {state!.odds.higher === 0 ? "imkânsız" : `%${(state!.odds.higher * 100).toFixed(0)} · ${fmtMult(state!.nextMult.higher ?? 0)}`}
+                </span>
+              </Button>
+              <Button
+                onClick={() => step("lower")}
+                disabled={busy || state!.odds.lower === 0}
+                tone="ruby"
+                className="flex-1 !py-4"
+              >
+                <span className="block text-sm">▼ ALÇAK</span>
+                <span className="block text-[11px] font-bold opacity-80">
+                  {state!.odds.lower === 0 ? "imkânsız" : `%${(state!.odds.lower * 100).toFixed(0)} · ${fmtMult(state!.nextMult.lower ?? 0)}`}
+                </span>
+              </Button>
+            </div>
 
-          <Button
-            onClick={cashout}
-            disabled={busy || state!.step === 0}
-            tone="gold"
-            className="w-full !py-3.5"
-          >
-            {state!.step === 0 ? "önce bir tahmin yap" : `ÇEK · ${coins(cashoutValue)}`}
-          </Button>
-        </>
+            <Button
+              onClick={cashout}
+              disabled={busy || state!.step === 0}
+              tone="gold"
+              className="w-full !py-3.5"
+            >
+              {state!.step === 0 ? "önce bir tahmin yap" : `ÇEK · ${coins(cashoutValue)}`}
+            </Button>
+        </ActionDock>
       ) : (
         <>
           <BetControls bet={bet} setBet={setBet} balance={balance} disabled={busy} />
-          <Button onClick={start} disabled={busy || bet > balance} tone="gold" className="w-full !py-4 !text-lg">
-            {bet > balance ? "Bakiye yetersiz" : "DESTEYİ AÇ"}
-          </Button>
+          <ActionDock>
+            <Button onClick={start} disabled={busy || bet > balance} tone="gold" className="w-full !py-4 !text-lg">
+              {bet > balance ? "Bakiye yetersiz" : "DESTEYİ AÇ"}
+            </Button>
+          </ActionDock>
         </>
       )}
 

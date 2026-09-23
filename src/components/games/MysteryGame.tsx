@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN, MYSTERY_TIERS } from "@/lib/games/config";
@@ -20,7 +21,7 @@ interface MysteryResponse {
 type Tier = "bronze" | "silver" | "gold";
 
 const TIERS: { key: Tier; label: string; body: string; lid: string; max: string }[] = [
-  { key: "bronze", label: "Bronz", body: "#7a4a1d", lid: "#c98a3a", max: "3x" },
+  { key: "bronze", label: "Bronz", body: "#7a4a1d", lid: "#c98a3a", max: "5x" },
   { key: "silver", label: "Gümüş", body: "#5b6472", lid: "#c3ccd9", max: "50x" },
   { key: "gold", label: "Altın", body: "#8a6205", lid: "#ffd062", max: "500x" },
 ];
@@ -192,9 +193,11 @@ export function MysteryGame({
       <BetControls bet={bet} setBet={setBet} balance={balance} disabled={opening || !!result} />
 
       {result ? (
-        <Button onClick={reset} tone="gold" className="w-full !py-4 !text-lg">
-          YENİ KUTULAR
-        </Button>
+        <ActionDock>
+          <Button onClick={reset} tone="gold" className="w-full !py-4 !text-lg">
+            YENİ KUTULAR
+          </Button>
+        </ActionDock>
       ) : (
         <p className="text-center text-xs text-muted">Yukarıdan bir kutuya dokun</p>
       )}

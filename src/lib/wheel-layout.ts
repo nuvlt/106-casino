@@ -6,14 +6,19 @@
  * (tek bir dev "boş" bloğu yerine), böylece gerçek bir çark gibi görünür
  * ama hiçbir yerde olasılık abartılmaz.
  *
- * 50x dilimi bu yüzden kıl kadar incedir (binde 2) — bu bir çizim hatası
- * değil, dürüstlüğün görsel karşılığı.
+ * 100x dilimi bu yüzden kıl kadar incedir (on binde 5) — bu bir çizim
+ * hatası değil, dürüstlüğün görsel karşılığı.
  */
 
 import { WHEEL_SEGMENTS } from "@/lib/games/config";
 
-/** Dilim sırası: tier indeksleri, çark çevresinde dolaşarak. */
-const ORDER = [0, 1, 2, 0, 3, 1, 2, 0, 4, 1, 2, 0, 3, 1, 5, 0, 2, 1, 3, 0, 4, 1, 2, 6];
+/**
+ * Dilim sırası: tier indeksleri, çark çevresinde dolaşarak. "Boş" dilimleri
+ * (8 adet) hep bir kazanç dilimiyle ayrılır; hiçbir yerde iki boş yan yana
+ * gelmez. 100x, turun başladığı "Boş" dilimin hemen yanında — klasik
+ * "az kalsın" yerleşimi.
+ */
+const ORDER = [0, 1, 2, 0, 3, 1, 0, 4, 1, 0, 2, 5, 0, 1, 3, 0, 2, 1, 0, 4, 3, 0, 1, 2, 6];
 
 /**
  * Dilim renkleri — klasik casino paleti.
@@ -33,12 +38,12 @@ export interface TierStyle {
 
 export const TIER_STYLE: TierStyle[] = [
   { light: "#2a3550", dark: "#0e1524", text: "#93a6c7" }, // 0x — antrasit
-  { light: "#1f8b4c", dark: "#08351f", text: "#eafff2" }, // 0.5x — zümrüt
-  { light: "#2f80ed", dark: "#0d3470", text: "#eaf4ff" }, // 1x — safir
-  { light: "#9d5cff", dark: "#3b1470", text: "#f6efff" }, // 2x — ametist
+  { light: "#1f8b4c", dark: "#08351f", text: "#eafff2" }, // 1.5x — zümrüt
+  { light: "#2f80ed", dark: "#0d3470", text: "#eaf4ff" }, // 2x — safir
+  { light: "#9d5cff", dark: "#3b1470", text: "#f6efff" }, // 3x — ametist
   { light: "#e01e37", dark: "#6b0b18", text: "#ffeef0" }, // 5x — yakut
-  { light: "#ff8c1a", dark: "#8a3c00", text: "#fff6ea" }, // 10x — turuncu
-  { light: "#ffd062", dark: "#a9760a", text: "#3a2500" }, // 50x — altın
+  { light: "#ff8c1a", dark: "#8a3c00", text: "#fff6ea" }, // 20x — turuncu
+  { light: "#ffd062", dark: "#a9760a", text: "#3a2500" }, // 100x — altın
 ];
 
 /** "Boş" dilimlerinin ikinci, biraz daha sıcak tonu (dönüşümlü kullanılır). */

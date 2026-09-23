@@ -40,15 +40,22 @@ export const STREAK_BONUS: readonly number[] = [
 /* ------------------------------------------------------------------ */
 /* LUCKY WHEEL                                                         */
 /* ------------------------------------------------------------------ */
-/** Ağırlıklar 10.000 üzerinden. Σ(w·m) = 9500 → RTP tam %95. */
+/**
+ * Ağırlıklar 10.000 üzerinden. Σ(w·m) = 9500 → RTP tam %95.
+ *
+ * 0.5x ve 1x dilimleri bilerek YOK: oyuncu bunları kazanç değil kayıp
+ * olarak algılıyordu (eski tabloda çevirmelerin %83'ü 1x veya altıydı).
+ * Aynı RTP bütçesi gerçek kazançlara aktarıldı — çevirmelerin %37'si
+ * kârla biter (eskiden %17), tavan 50x'ten 100x'e çıktı.
+ */
 export const WHEEL_SEGMENTS: readonly { mult: number; weight: number; label: string }[] = [
-  { mult: 0, weight: 3880, label: "Boş" },
-  { mult: 50, weight: 2600, label: "0.5x" },
-  { mult: 100, weight: 1800, label: "1x" },
-  { mult: 200, weight: 1200, label: "2x" },
-  { mult: 500, weight: 400, label: "5x" },
-  { mult: 1000, weight: 100, label: "10x" },
-  { mult: 5000, weight: 20, label: "50x" },
+  { mult: 0, weight: 6295, label: "Boş" },
+  { mult: 150, weight: 1600, label: "1.5x" },
+  { mult: 200, weight: 1150, label: "2x" },
+  { mult: 300, weight: 600, label: "3x" },
+  { mult: 500, weight: 300, label: "5x" },
+  { mult: 2000, weight: 50, label: "20x" },
+  { mult: 10000, weight: 5, label: "100x" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -95,16 +102,19 @@ export const PLINKO_TABLES: Record<string, readonly number[]> = {
 /* ------------------------------------------------------------------ */
 /* SCRATCH CARD                                                        */
 /* ------------------------------------------------------------------ */
-/** 3x3 kazı-kazan. Aynı semboldan üç tane → ödül. Σ(w·m) = 9500. */
+/**
+ * 3x3 kazı-kazan. Aynı semboldan üç tane → ödül. Σ(w·m) = 9500.
+ * Teselli ödülü (0.5x/1x) yok; kartların %29'u kârla biter (eskiden %12).
+ */
 export const SCRATCH_PRIZES: readonly { mult: number; weight: number; symbol: string }[] = [
-  { mult: 0, weight: 5062, symbol: "—" },
-  { mult: 50, weight: 2500, symbol: "🍋" },
-  { mult: 100, weight: 1200, symbol: "🍒" },
-  { mult: 200, weight: 600, symbol: "🔔" },
-  { mult: 500, weight: 400, symbol: "⭐" },
-  { mult: 1000, weight: 180, symbol: "💎" },
-  { mult: 2500, weight: 50, symbol: "👑" },
-  { mult: 10000, weight: 8, symbol: "🏆" },
+  { mult: 0, weight: 7105, symbol: "—" },
+  { mult: 150, weight: 1100, symbol: "🍋" },
+  { mult: 200, weight: 825, symbol: "🍒" },
+  { mult: 300, weight: 500, symbol: "🔔" },
+  { mult: 500, weight: 300, symbol: "⭐" },
+  { mult: 1000, weight: 120, symbol: "💎" },
+  { mult: 2500, weight: 40, symbol: "👑" },
+  { mult: 10000, weight: 10, symbol: "🏆" },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -116,32 +126,38 @@ export const GUESS_MAX_PICKS = 9;
 /* ------------------------------------------------------------------ */
 /* MYSTERY BOXES                                                       */
 /* ------------------------------------------------------------------ */
-/** Üç kasa seviyesi — aynı RTP, farklı volatilite. Σ(w·m) = 9500. */
+/**
+ * Üç kasa seviyesi — aynı RTP, farklı volatilite. Σ(w·m) = 9500.
+ * Kutuların içinde 0.5x/1x yok: açılan her kutu ya boş ya gerçek kazanç.
+ *   Bronz: yarı yarıya kazanç, küçük çarpanlar (tavan 5x)
+ *   Gümüş: üçte bir kazanç (tavan 50x)
+ *   Altın: nadir ama büyük (tavan 500x)
+ */
 export const MYSTERY_TIERS: Record<
   "bronze" | "silver" | "gold",
   readonly { mult: number; weight: number }[]
 > = {
   bronze: [
-    { mult: 0, weight: 2250 },
-    { mult: 50, weight: 2000 },
-    { mult: 100, weight: 2500 },
-    { mult: 150, weight: 1800 },
-    { mult: 200, weight: 1050 },
-    { mult: 300, weight: 400 },
+    { mult: 0, weight: 5050 },
+    { mult: 150, weight: 3000 },
+    { mult: 200, weight: 1250 },
+    { mult: 300, weight: 500 },
+    { mult: 500, weight: 200 },
   ],
   silver: [
-    { mult: 0, weight: 5910 },
-    { mult: 50, weight: 2500 },
+    { mult: 0, weight: 6530 },
+    { mult: 150, weight: 1500 },
     { mult: 200, weight: 1000 },
-    { mult: 500, weight: 400 },
-    { mult: 1500, weight: 150 },
-    { mult: 5000, weight: 40 },
+    { mult: 300, weight: 500 },
+    { mult: 500, weight: 350 },
+    { mult: 1000, weight: 100 },
+    { mult: 5000, weight: 20 },
   ],
   gold: [
-    { mult: 0, weight: 8475 },
-    { mult: 100, weight: 1000 },
-    { mult: 500, weight: 400 },
-    { mult: 2000, weight: 100 },
+    { mult: 0, weight: 8600 },
+    { mult: 200, weight: 1000 },
+    { mult: 500, weight: 300 },
+    { mult: 2000, weight: 75 },
     { mult: 10000, weight: 20 },
     { mult: 50000, weight: 5 },
   ],

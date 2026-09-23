@@ -48,7 +48,7 @@ export const GAMES: readonly GameMeta[] = [
     accent: "#f5b921",
     emoji: "🎡",
     volatility: "orta",
-    maxWin: "50x",
+    maxWin: "100x",
     ready: true,
   },
   {

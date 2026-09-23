@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN, SCRATCH_PRIZES } from "@/lib/games/config";
@@ -182,14 +183,16 @@ export function ScratchGame({
       <div className="space-y-4 lg:sticky lg:top-20">
       <BetControls bet={bet} setBet={setBet} balance={balance} disabled={!!card && !allOpen} />
 
-      <Button
-        onClick={buy}
-        disabled={busy || bet > balance || (!!card && !allOpen)}
-        tone="gold"
-        className="w-full !py-4 !text-lg"
-      >
-        {bet > balance ? "Bakiye yetersiz" : card && !allOpen ? "Önce kartı bitir" : "KART AL"}
-      </Button>
+      <ActionDock>
+        <Button
+          onClick={buy}
+          disabled={busy || bet > balance || (!!card && !allOpen)}
+          tone="gold"
+          className="w-full !py-4 !text-lg"
+        >
+          {bet > balance ? "Bakiye yetersiz" : card && !allOpen ? "Önce kartı bitir" : "KART AL"}
+        </Button>
+      </ActionDock>
 
       {history.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN } from "@/lib/games/config";
@@ -409,14 +410,16 @@ export function CrashGame({
       <div className="space-y-4 lg:sticky lg:top-20">
       {/* --- KONTROLLER --- */}
       {phase === "flying" ? (
-        <Button
-          onClick={() => round && void cashout(round.roundId)}
-          tone="felt"
-          className="w-full !py-5 !text-xl"
-          disabled={!!round?.autoCashout}
-        >
-          {round?.autoCashout ? "otomatik çekim bekleniyor…" : `ÇEK · ${coins(Math.floor(bet * live))}`}
-        </Button>
+        <ActionDock>
+          <Button
+            onClick={() => round && void cashout(round.roundId)}
+            tone="felt"
+            className="w-full !py-5 !text-xl"
+            disabled={!!round?.autoCashout}
+          >
+            {round?.autoCashout ? "otomatik çekim bekleniyor…" : `ÇEK · ${coins(Math.floor(bet * live))}`}
+          </Button>
+        </ActionDock>
       ) : (
         <>
           <BetControls bet={bet} setBet={setBet} balance={balance} />
@@ -463,9 +466,11 @@ export function CrashGame({
             </p>
           </div>
 
-          <Button onClick={start} disabled={bet > balance} tone="gold" className="w-full !py-4 !text-lg">
-            {bet > balance ? "Bakiye yetersiz" : "KALKIŞ"}
-          </Button>
+          <ActionDock>
+            <Button onClick={start} disabled={bet > balance} tone="gold" className="w-full !py-4 !text-lg">
+              {bet > balance ? "Bakiye yetersiz" : "KALKIŞ"}
+            </Button>
+          </ActionDock>
         </>
       )}
 

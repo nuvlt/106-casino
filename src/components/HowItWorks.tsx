@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const SECTIONS: { title: string; body: string }[] = [
   {
@@ -36,6 +37,9 @@ const SECTIONS: { title: string; body: string }[] = [
 /** Sağ altta sabit "i" düğmesi — platformun nasıl işlediğini anlatan bir panel açar. */
 export function HowItWorks() {
   const [open, setOpen] = useState(false);
+  // Oyun ekranında telefonda alt köşe oyna düğmesine ait; "i" orada gizlenir
+  // (geniş ekranda yer çakışması yok, görünür kalır).
+  const inGame = usePathname()?.startsWith("/oyun/") ?? false;
 
   useEffect(() => {
     if (!open) return;
@@ -58,10 +62,10 @@ export function HowItWorks() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label="Platform nasıl işliyor?"
-        className="gold-metal fixed bottom-4 right-4 z-40 grid size-11 place-items-center rounded-full
+        className={`${inGame ? "hidden lg:grid" : "grid"} gold-metal fixed bottom-4 right-4 z-40 size-11 place-items-center rounded-full
                    font-display text-lg font-black text-[#3a2500]
                    shadow-[0_6px_0_#7a5804,0_10px_24px_rgba(0,0,0,0.5)] ring-1 ring-gold/40
-                   transition active:translate-y-[3px] active:shadow-[0_2px_0_#7a5804]"
+                   transition active:translate-y-[3px] active:shadow-[0_2px_0_#7a5804]`}
       >
         i
       </button>

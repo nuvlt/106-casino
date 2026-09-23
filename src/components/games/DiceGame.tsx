@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
+import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN, DICE_MAX_WIN_OUTCOMES, DICE_MIN_WIN_OUTCOMES, RTP_BPS } from "@/lib/games/config";
@@ -274,9 +275,11 @@ export function DiceGame({
         </div>
       ) : null}
 
-      <Button onClick={roll} disabled={rolling || bet > balance} tone="gold" className="w-full !py-4 !text-lg">
-        {rolling ? "Atılıyor…" : bet > balance ? "Bakiye yetersiz" : "ZAR AT"}
-      </Button>
+      <ActionDock>
+        <Button onClick={roll} disabled={rolling || bet > balance} tone="gold" className="w-full !py-4 !text-lg">
+          {rolling ? "Atılıyor…" : bet > balance ? "Bakiye yetersiz" : "ZAR AT"}
+        </Button>
+      </ActionDock>
 
       {history.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
