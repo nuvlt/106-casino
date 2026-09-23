@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import type { ComponentType } from "react";
 import { BalanceBar } from "@/components/BalanceBar";
 import { OpenRoundBanner } from "@/components/OpenRoundBanner";
 import { useMe } from "@/hooks/useMe";
 import { gameBySlug } from "@/lib/catalog";
+import { sfx } from "@/lib/sound";
 import { WheelGame } from "@/components/games/WheelGame";
 import { CrashGame } from "@/components/games/CrashGame";
 import { DiceGame } from "@/components/games/DiceGame";
@@ -36,6 +38,15 @@ const GAME_UI: Record<string, ComponentType<GameProps>> = {
 /** Oyun sayfalarının ortak kabuğu: başlık, bakiye ve oyunun kendisi. */
 export function GameScreen({ slug }: { slug: string }) {
   const me = useMe();
+
+  // Oyun ekranındayken hafif bir arka plan müziği çalar, sayfadan
+  // ayrılınca durur. Ses kapalıysa `sfx` zaten sessiz kalır.
+  useEffect(() => {
+    sfx.prime();
+    sfx.music.start();
+    return () => sfx.music.stop();
+  }, []);
+
   const meta = gameBySlug(slug);
   const Game = GAME_UI[slug];
   if (!meta || !Game) return null;

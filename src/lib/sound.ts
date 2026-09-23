@@ -122,6 +122,92 @@ function arpeggio(base: number, steps: number, gain = 0.26) {
   }
 }
 
+/**
+ * Arka plan müziği — oyun ekranındayken çalan, salon havası veren kısa bir
+ * döngü. Dosya yok: aynı `tone()` sentezleyicisiyle önceden zamanlanan
+ * notalardan oluşuyor (bkz. "A Tale of Two Clocks" tekniği — setTimeout ile
+ * yoklanan ama gerçek zamanı AudioContext saatinden alan bir zamanlayıcı,
+ * sekme arka plana atılsa bile kayma olmaz).
+ *
+ * Am - F - C - G ilerleyişi üstünde "oom-pah" yürüyen bas + hafif üçgen
+ * dalga arpej; döngü sonunda küçük bir "cız" (sparkle) jeton hissi verir.
+ */
+interface MusicStep {
+  bass?: number;
+  bassDur?: number;
+  mel?: number;
+  melDur?: number;
+  sparkle?: number;
+}
+
+const MUSIC_BPM = 100;
+const MUSIC_STEP_DUR = 60 / MUSIC_BPM / 2; // sekizlik nota
+const MUSIC_LOOKAHEAD = 0.1; // saniye
+const MUSIC_SCHEDULER_INTERVAL_MS = 50;
+
+const MUSIC_PATTERN: MusicStep[] = [
+  // Am
+  { bass: 110.0, bassDur: 0.5, mel: 329.63, melDur: 0.18 },
+  { mel: 440.0, melDur: 0.16 },
+  { bass: 164.81, bassDur: 0.4 },
+  { mel: 523.25, melDur: 0.16 },
+  // F
+  { bass: 87.31, bassDur: 0.5, mel: 261.63, melDur: 0.18 },
+  { mel: 349.23, melDur: 0.16 },
+  { bass: 130.81, bassDur: 0.4 },
+  { mel: 440.0, melDur: 0.16 },
+  // C
+  { bass: 130.81, bassDur: 0.5, mel: 392.0, melDur: 0.18 },
+  { mel: 523.25, melDur: 0.16 },
+  { bass: 196.0, bassDur: 0.4 },
+  { mel: 659.25, melDur: 0.16 },
+  // G
+  { bass: 98.0, bassDur: 0.5, mel: 293.66, melDur: 0.18 },
+  { mel: 392.0, melDur: 0.16 },
+  { bass: 146.83, bassDur: 0.4 },
+  { mel: 587.33, melDur: 0.16, sparkle: 1174.66 },
+];
+
+const music = {
+  playing: false,
+  stepIndex: 0,
+  nextStepTime: 0,
+  timerId: null as ReturnType<typeof setTimeout> | null,
+};
+
+function scheduleMusicStep(step: MusicStep, time: number) {
+  const c = ctx;
+  if (!c) return;
+  const delay = Math.max(0, time - c.currentTime);
+  if (step.bass) tone({ freq: step.bass, dur: step.bassDur ?? 0.4, type: "sine", gain: 0.09, delay });
+  if (step.mel) tone({ freq: step.mel, dur: step.melDur ?? 0.16, type: "triangle", gain: 0.065, delay });
+  if (step.sparkle) tone({ freq: step.sparkle, dur: 0.5, type: "sine", gain: 0.045, delay: delay + 0.05 });
+}
+
+function musicScheduler() {
+  const c = ctx;
+  if (!c || !music.playing) return;
+
+  // Tarayıcı bağlamı henüz "suspended" tutuyorsa currentTime hiç ilerlemez;
+  // her turda yeniden resume() denemek (örn. Safari'nin daha sıkı otomatik
+  // oynatma kuralları için) ucuz ve zararsız. Askıdayken de bir sonraki
+  // adımı kuyruklamaya devam ediyoruz ki bağlam açılır açılmaz —herhangi
+  // bir kullanıcı dokunuşuyla— müzik hemen duyulsun.
+  if (c.state === "suspended") void c.resume();
+
+  // Uzun süre askıda kaldıktan sonra birden çalışır duruma geçerse,
+  // nextStepTime çok gerimizde kalmış olabilir — hepsini art arda aynı anda
+  // patlatmak yerine şimdiki zamana sabitleyip normal akışa devam ediyoruz.
+  if (music.nextStepTime < c.currentTime) music.nextStepTime = c.currentTime;
+
+  while (music.nextStepTime < c.currentTime + MUSIC_LOOKAHEAD) {
+    scheduleMusicStep(MUSIC_PATTERN[music.stepIndex]!, music.nextStepTime);
+    music.stepIndex = (music.stepIndex + 1) % MUSIC_PATTERN.length;
+    music.nextStepTime += MUSIC_STEP_DUR;
+  }
+  music.timerId = setTimeout(musicScheduler, MUSIC_SCHEDULER_INTERVAL_MS);
+}
+
 export const sfx = {
   /** Ses bağlamını kullanıcı hareketiyle başlatır. */
   prime() {
@@ -200,5 +286,24 @@ export const sfx = {
   badge() {
     arpeggio(523, 4, 0.22);
     tone({ freq: 2093, dur: 0.5, type: "sine", gain: 0.16, delay: 0.3 });
+  },
+
+  /** Oyun ekranındayken çalan hafif arka plan müziği. */
+  music: {
+    start() {
+      const c = ensureCtx();
+      if (!c || music.playing) return;
+      music.playing = true;
+      music.stepIndex = 0;
+      music.nextStepTime = c.currentTime + 0.05;
+      musicScheduler();
+    },
+    stop() {
+      music.playing = false;
+      if (music.timerId) {
+        clearTimeout(music.timerId);
+        music.timerId = null;
+      }
+    },
   },
 };
