@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { coins } from "@/lib/format";
 import { SoundToggle } from "@/components/SoundToggle";
+import { UserMenu, type UserMenuUser } from "@/components/UserMenu";
 
 /** Üst şerit: altın jeton görünümlü bakiye, seri ve geri dönüş. Her ekranda sabit. */
 export function BalanceBar({
@@ -10,11 +11,13 @@ export function BalanceBar({
   streakDay,
   back,
   title,
+  user,
 }: {
   balance: number | undefined;
   streakDay?: number;
   back?: boolean;
   title?: string;
+  user?: UserMenuUser;
 }) {
   return (
     <header
@@ -76,6 +79,8 @@ export function BalanceBar({
               </span>
             </div>
           </div>
+
+          <UserMenu user={user} />
         </div>
       </div>
     </header>

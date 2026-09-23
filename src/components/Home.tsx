@@ -31,7 +31,7 @@ export function Home() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 pb-16 lg:max-w-6xl lg:px-6">
-      <BalanceBar balance={me?.wallet.balance} streakDay={me?.streak.day} />
+      <BalanceBar balance={me?.wallet.balance} streakDay={me?.streak.day} user={me?.user} />
       <QuickNav isAdmin={me?.user.role === "ADMIN"} />
 
       <LiveFeed />

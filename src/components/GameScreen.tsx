@@ -46,7 +46,7 @@ export function GameScreen({ slug }: { slug: string }) {
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 pb-16 lg:max-w-5xl lg:px-6">
-      <BalanceBar balance={me.data?.wallet.balance} back title={meta.title} />
+      <BalanceBar balance={me.data?.wallet.balance} back title={meta.title} user={me.data?.user} />
       <OpenRoundBanner round={me.data?.openRound ?? null} currentSlug={slug} />
       <Game balance={me.data?.wallet.balance ?? 0} onSettled={onSettled} onReload={me.reload} />
     </main>

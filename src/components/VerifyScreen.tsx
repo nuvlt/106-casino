@@ -160,7 +160,7 @@ export function VerifyScreen() {
 
   return (
     <main className="mx-auto w-full max-w-lg px-4 pb-16 lg:max-w-4xl lg:px-6">
-      <BalanceBar balance={me.data?.wallet.balance} back title="Adalet" />
+      <BalanceBar balance={me.data?.wallet.balance} back title="Adalet" user={me.data?.user} />
 
       <div className="space-y-4">
         <Card>
