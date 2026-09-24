@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { HowItWorks } from "@/components/HowItWorks";
+import { LiveToasts } from "@/components/LiveToasts";
 
 export const metadata: Metadata = {
   title: "106 Casino",
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         */}
         <div className="relative z-[1]">
           {children}
+          <LiveToasts />
           <HowItWorks />
         </div>
       </body>

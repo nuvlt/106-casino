@@ -26,6 +26,16 @@ export const DAILY_GRANT = 1_000 * COIN;
 export const MIN_BET = 10 * COIN;
 export const MAX_BET = 500 * COIN;
 
+/**
+ * DAVET — linkle yeni katılan her oyuncu için iki tarafa da bir kerelik
+ * bonus. Davet edenin bonusu ilk REFERRAL_MAX_REWARDED davetle sınırlı:
+ * sonrakiler yine sayılır ama bonus vermez (sıralamayı davet sayısıyla
+ * şişirmek mümkün olmasın). Bonus bakiyeye eklenir, zirveyi doğrudan
+ * değiştirmez — kazanca çevirmek için oynamak gerekir.
+ */
+export const REFERRAL_BONUS = 250 * COIN;
+export const REFERRAL_MAX_REWARDED = 10;
+
 /** Üst üste giriş günü başına ekstra hak (gün 1..7, sonrası 7'de sabit). */
 export const STREAK_BONUS: readonly number[] = [
   0, // gün 1 — sadece günlük hak

@@ -55,6 +55,7 @@ const TYPE_LABEL: Record<string, string> = {
   PAYOUT: "ödeme",
   REFUND: "iade",
   ADMIN_ADJUST: "yönetici düzeltmesi",
+  REFERRAL_BONUS: "davet bonusu",
 };
 
 /** Gerçekleşen RTP — hedeften sapma varsa kırmızıya döner. */

@@ -180,9 +180,17 @@ body > * {
 }
 .animate-glow { animation: pulse-glow 2.2s ease-in-out infinite; }
 
+/* Üstten inen canlı bildirim. */
+@keyframes toast-in {
+  0% { opacity: 0; transform: translateY(-16px) scale(0.96); }
+  70% { opacity: 1; transform: translateY(2px) scale(1.01); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-toast-in { animation: toast-in 0.38s cubic-bezier(.2,.9,.3,1.2) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee, .animate-pop, .animate-rise, .animate-floaty,
-  .animate-glow, .animate-tumble, .animate-settle,
+  .animate-glow, .animate-tumble, .animate-settle, .animate-toast-in,
   .shine::before { animation: none !important; }
 }
 

@@ -18,6 +18,15 @@ export function QuickNav({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <nav aria-label="Kısa yollar" className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+      {/* Davet kartına kısa yol — telefonda kart sayfanın altında kalıyor. */}
+      <a
+        href="#davet"
+        className="gold-metal flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2
+                   text-xs font-black text-[#3a2500] shadow-[0_3px_0_#7a5804] transition active:scale-[0.97]"
+      >
+        <span aria-hidden>🎁</span>
+        Davet et
+      </a>
       {links.map((l) => (
         <Link
           key={l.href}

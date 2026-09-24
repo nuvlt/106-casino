@@ -22,7 +22,7 @@ const PAGE = 50;
 
 const TYPES = [
   "DAILY_RESET", "STREAK_BONUS", "MISSION_REWARD", "BADGE_REWARD",
-  "BET", "PAYOUT", "REFUND", "ADMIN_ADJUST",
+  "BET", "PAYOUT", "REFUND", "ADMIN_ADJUST", "REFERRAL_BONUS",
 ] as const;
 type LedgerType = (typeof TYPES)[number];
 

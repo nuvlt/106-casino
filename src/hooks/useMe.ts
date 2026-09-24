@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { useApi } from "@/hooks/useApi";
+import type { ReferralNews } from "@/lib/referral";
+import { publishReferralNews } from "@/lib/toast-bus";
 
 export interface MeResponse {
   user: { id: string; name: string | null; email: string; role: "PLAYER" | "ADMIN" };
@@ -28,6 +31,20 @@ export interface MeResponse {
   }[];
   badges: { id: string; title: string; description: string; icon: string; tier: number }[];
   fairness: { serverSeedHash: string; clientSeed: string; nonce: number };
+  /** Bu yanıtta ödenen davet bonusları — bir kez bildirim olarak gösterilir. */
+  referralNews?: ReferralNews[];
 }
 
-export const useMe = (refreshMs?: number) => useApi<MeResponse>("/api/me", { refreshMs });
+export function useMe(refreshMs?: number) {
+  const state = useApi<MeResponse>("/api/me", { refreshMs });
+
+  // Davet bonusu ödendiyse üstteki bildirim katmanına haber ver. Aynı
+  // dizi referansı (setData ile bakiye güncellemesi) tekrar tetiklemez;
+  // LiveToasts ayrıca kimliğe göre tekilleştirir.
+  const news = state.data?.referralNews;
+  useEffect(() => {
+    if (news?.length) publishReferralNews(news);
+  }, [news]);
+
+  return state;
+}

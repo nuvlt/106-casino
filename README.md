@@ -65,6 +65,14 @@ npm run build && npm start
 `*.proxy.rlwy.net`) adresleri kullanılmalı; `*.railway.internal` adresleri
 yalnızca Railway'in kendi ağı içinden çözülür, Vercel'den ulaşılamaz.
 
+## Davet sistemi — tek seferlik veritabanı kurulumu
+
+[`scripts/migrate-davet.sql`](scripts/migrate-davet.sql) dosyasını Railway →
+Postgres → Data (Query) sekmesine yapıştırıp bir kez çalıştırın. Yalnızca
+iki yeni tablo ve bir defter türü ekler, mevcut veriye dokunmaz; tekrar
+çalıştırmak güvenlidir. Çalıştırılmadan kod yayına çıkarsa uygulama
+bozulmaz — yalnızca davet kartı görünmez.
+
 ## Oyunu sıfırdan başlatma
 
 [`scripts/reset-season.sql`](scripts/reset-season.sql) dosyasının içeriğini
@@ -103,7 +111,8 @@ npm run test:outcome      # sonuç gösterimi: net kâr/zarar (17 kontrol)
 npm run test:missions     # görev ödülü alma, çift ödeme koruması (15 kontrol)
 npm run test:plinko       # çoklu top: her top ayrı tur (11 kontrol)
 npm run test:verify       # tarayıcı doğrulayıcısı = sunucu motoru (10 kontrol)
-npm run test:all          # hepsi (126 kontrol)
+npm run test:referral     # davet: bağlama, tek ödeme, sınır (32 kontrol)
+npm run test:all          # hepsi (158 kontrol)
 
 # Aynı testler GERÇEK bir Postgres sunucusuna, üretimdeki sürücüyle (postgres.js):
 TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:5432/casino_test npm run test:all

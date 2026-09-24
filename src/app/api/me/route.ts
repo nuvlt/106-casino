@@ -6,6 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { missions, playerStats, rounds, userBadges, userMissions, users } from "@/db/schema";
@@ -15,8 +16,39 @@ import { ensureActiveSeed } from "@/lib/seeds";
 import { resolveDecidedCrashRounds } from "@/lib/crash";
 import { COIN } from "@/lib/games/config";
 import { BADGES } from "@/lib/badges";
+import {
+  INVITE_COOKIE,
+  linkReferral,
+  settleReferralRewards,
+  type ReferralNews,
+} from "@/lib/referral";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Davet: çerezdeki kodla ilişki kur, bekleyen bonusları öde.
+ *
+ * Asla fırlatmaz — davet tabloları henüz kurulmamış olsa bile (migration
+ * uygulanmadan kod yayına çıktıysa) /api/me eskisi gibi çalışır, yalnızca
+ * davet özelliği devre dışı kalır. `consumed` yalnız kesin bir sonuçta
+ * true olur; geçici bir hatada çerez silinmez, sonraki istekte tekrar denenir.
+ */
+async function processReferrals(
+  userId: string,
+  code: string | undefined,
+): Promise<{ news: ReferralNews[]; consumed: boolean }> {
+  let consumed = false;
+  try {
+    if (code) {
+      await linkReferral(db, userId, code);
+      consumed = true;
+    }
+    return { news: await settleReferralRewards(db, userId), consumed };
+  } catch (e) {
+    console.error("Davet işlenemedi:", e);
+    return { news: [], consumed };
+  }
+}
 
 export async function GET() {
   try {
@@ -25,10 +57,13 @@ export async function GET() {
     // Günlük hak ÖNCE: sıfırlama bakiyeyi yeniden yazar. Tohum ve yarım
     // Crash turları ondan sonra, birbirinden bağımsız olduğu için aynı anda.
     const daily = await ensureDailyClaim(db, user.id);
-    const [seed] = await Promise.all([
+    // Davet bonusu da günlük haktan SONRA: sabah sıfırlaması onu silmesin.
+    const inviteCode = (await cookies()).get(INVITE_COOKIE)?.value;
+    const [seed, , referral] = await Promise.all([
       ensureActiveSeed(db, user.id),
       // Yarım kalmış turlar burada sonuçlanır (bkz. lib/crash.ts).
       resolveDecidedCrashRounds(db, user.id),
+      processReferrals(user.id, inviteCode),
     ]);
     const day = daily.day;
 
@@ -86,7 +121,7 @@ export async function GET() {
         : [];
     });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       user: {
         id: user.id,
         name: user.name,
@@ -121,7 +156,11 @@ export async function GET() {
         clientSeed: seed.clientSeed,
         nonce: seed.nonce,
       },
+      // Bu istekte ödenen davet bonusları — arayüz bir kez bildirim gösterir.
+      referralNews: referral.news,
     });
+    if (referral.consumed) res.cookies.delete(INVITE_COOKIE);
+    return res;
   } catch (e) {
     if (e instanceof ApiError) return fail(e.status, e.message, e.code);
     console.error("/api/me hatası:", e);

@@ -16,7 +16,7 @@
     "calibrate": "tsx scripts/calibrate-plinko.ts",
     "test": "tsx scripts/test-wallet.mts",
     "test:games": "tsx scripts/test-games.mts",
-    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run test:plinko && npm run test:verify && npm run test:together && npm run test:security && npm run verify:migration",
+    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run test:plinko && npm run test:verify && npm run test:together && npm run test:security && npm run test:referral && npm run verify:migration",
     "test:stale": "tsx scripts/test-stale.mts",
     "test:crash": "tsx scripts/test-crash-poll.mts",
     "test:outcome": "tsx scripts/test-outcome.mts",
@@ -24,7 +24,8 @@
     "test:plinko": "tsx scripts/test-plinko-balls.mts",
     "test:verify": "tsx scripts/test-verify.mts",
     "test:together": "tsx scripts/test-together.mts",
-    "test:security": "tsx scripts/test-security.mts"
+    "test:security": "tsx scripts/test-security.mts",
+    "test:referral": "tsx scripts/test-referral.mts"
   },
   "license": "ISC",
   "devDependencies": {

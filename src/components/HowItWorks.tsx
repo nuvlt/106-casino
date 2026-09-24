@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { coinsShort } from "@/lib/format";
+import { REFERRAL_BONUS, REFERRAL_MAX_REWARDED } from "@/lib/games/config";
 
 const SECTIONS: { title: string; body: string }[] = [
   {
@@ -15,6 +17,14 @@ const SECTIONS: { title: string; body: string }[] = [
   {
     title: "Günün görevleri",
     body: "Her gece yenilenen üç görev vardır (ör. \"herhangi bir oyunda 10x yakala\"). Tamamlayıp ödülünü aldığında ekstra coin kazanırsın.",
+  },
+  {
+    title: "Arkadaşını davet et",
+    body: `Ana sayfadaki "Arkadaşını getir" kartından kişisel linkini paylaş. O linkle ilk kez katılan her iş arkadaşın için ikinize de +${coinsShort(REFERRAL_BONUS)} coin eklenir (davet edenin bonusu ilk ${REFERRAL_MAX_REWARDED} davetle sınırlı).`,
+  },
+  {
+    title: "Canlı kazançlar",
+    body: "Biri 10x ve üzeri bir çarpan ya da 1.000 coin üstü bir kazanç yakaladığında, hangi sayfada olursan ol ekranın üstünde kısa bir bildirim çıkar. Dokunursan o oyuna gidersin.",
   },
   {
     title: "Rozetler",

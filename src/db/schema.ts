@@ -59,6 +59,7 @@ export const ledgerTypeEnum = pgEnum("ledger_type", [
   "PAYOUT", // pozitif
   "REFUND", // iptal edilen tur
   "ADMIN_ADJUST",
+  "REFERRAL_BONUS", // davet eden ve edilen için bir kerelik bonus
 ]);
 
 export const missionKindEnum = pgEnum("mission_kind", [
@@ -460,6 +461,50 @@ export const feedEvents = pgTable(
     index("feed_created_idx").on(t.createdAt.desc()),
     index("feed_pinned_idx").on(t.pinned, t.multX4.desc()),
   ],
+);
+
+/* ================================================================== */
+/* DAVET                                                              */
+/* ================================================================== */
+
+// Her oyuncunun kişisel davet kodu — ilk istendiğinde üretilir.
+// Kullanıcı tablosuna sütun eklemek yerine ayrı tablo: Auth.js adaptörü
+// "user" tablosunu her istekte okuyor; migration uygulanmadan kod
+// yayına çıkarsa yeni bir sütun bütün girişleri düşürürdü. Ayrı tabloda
+// en kötü ihtimalle yalnızca davet özelliği çalışmaz.
+export const inviteCodes = pgTable("invite_code", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  code: text("code").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Kim kimi getirdi. Bir oyuncu yalnızca BİR kez davet edilmiş sayılır
+// (invitee_id tekil). Bonuslar ilişki kurulurken sabitlenir, iki taraf
+// da kendi ödülünü uygulamayı bir sonraki açışında alır.
+export const referrals = pgTable(
+  "referral",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    inviterId: text("inviter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    inviteeId: text("invitee_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    inviterBonus: integer("inviter_bonus").notNull().default(0), // centicoin
+    inviteeBonus: integer("invitee_bonus").notNull().default(0),
+    inviterRewardedAt: timestamp("inviter_rewarded_at", { withTimezone: true }),
+    inviteeRewardedAt: timestamp("invitee_rewarded_at", { withTimezone: true }),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("referral_inviter_idx").on(t.inviterId, t.createdAt.desc())],
 );
 
 /* ================================================================== */

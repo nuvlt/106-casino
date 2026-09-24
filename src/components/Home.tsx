@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BalanceBar } from "@/components/BalanceBar";
 import { GameGrid } from "@/components/GameGrid";
 import { Hero } from "@/components/Hero";
+import { InviteCard } from "@/components/InviteCard";
 import { Leaderboard } from "@/components/Leaderboard";
 import { LiveFeed } from "@/components/LiveFeed";
 import { Missions } from "@/components/Missions";
@@ -57,6 +58,7 @@ export function Home() {
         {/* ---------- YAN SÜTUN ---------- */}
         {me ? (
           <aside className="mt-4 space-y-4 lg:mt-0">
+            <InviteCard />
             <Leaderboard />
             <Link
               href="/siralama"

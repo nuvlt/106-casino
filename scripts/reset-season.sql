@@ -7,7 +7,8 @@
 -- Silinenler: tüm turlar, para defteri, istatistikler, sıralama, görevler,
 -- kazanılmış rozetler, canlı akış, tohum çiftleri.
 -- Kalanlar:  kullanıcı hesapları ve oturumlar (kimse yeniden giriş
---            yapmak zorunda kalmaz), rozet TANIMLARI.
+--            yapmak zorunda kalmaz), rozet TANIMLARI, davet linkleri ve
+--            "kim kimi getirdi" kayıtları (davet bir hesaba bağlı, sezona değil).
 --
 -- Bakiyeler 0'lanır; herkes uygulamayı ilk açtığında günlük 1.000 coin'i
 -- alır ve 1. günden seri başlar. Defter bütünlüğü korunur.

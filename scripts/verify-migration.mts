@@ -35,6 +35,26 @@ for (const file of files) {
   console.log(`✅ ${file} — ${statements.length} ifade uygulandı`);
 }
 
+// 0001 ve sonrası tekrar çalıştırmaya dayanıklı olmalı: Railway'e elle
+// yapıştırılıp sonra `db:migrate` ile bir kez daha uygulanabilir.
+for (const file of files.filter((f) => f !== "0000_init.sql")) {
+  const statements = readFileSync(`${dir}/${file}`, "utf8")
+    .split("--> statement-breakpoint")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  try {
+    for (const statement of statements) await db.exec(statement);
+    console.log(`✅ ${file} — ikinci kez uygulandı, hata yok (idempotent)`);
+  } catch (e) {
+    console.error(`❌ ${file} ikinci uygulamada hata verdi — IF NOT EXISTS eksik olabilir`);
+    throw e;
+  }
+}
+
+// Railway'e yapıştırılacak el betiği de aynı sonucu vermeli.
+await db.exec(readFileSync("scripts/migrate-davet.sql", "utf8"));
+console.log("✅ scripts/migrate-davet.sql — kurulu şemada sorunsuz çalıştı");
+
 const tables = await db.query<{ table_name: string }>(
   `select table_name from information_schema.tables
    where table_schema = 'public' order by table_name`,
