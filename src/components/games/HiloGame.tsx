@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button, Card, Pill, SectionTitle } from "@/components/ui";
 import { ActionDock } from "@/components/games/ActionDock";
 import { BetControls } from "@/components/games/BetControls";
+import { PlayingCard } from "@/components/games/PlayingCard";
 import { newKey, post } from "@/hooks/useApi";
 import { COIN } from "@/lib/games/config";
 import { coins, mult as fmtMult } from "@/lib/format";
@@ -42,37 +43,6 @@ interface CashoutResponse {
   mult: number;
   balance: number;
   newBadges: { id: string; title: string; icon: string; reward: number }[];
-}
-
-/** Kartın rengi: karo/kupa kırmızı, sinek/maça siyah. */
-const isRed = (label: string) => label.includes("♦") || label.includes("♥");
-
-function PlayingCard({ label, big }: { label: string; big?: boolean }) {
-  const red = isRed(label);
-  const rank = label.slice(0, -1);
-  const suit = label.slice(-1);
-  return (
-    <div
-      className={`relative shrink-0 rounded-xl bg-gradient-to-b from-white to-[#e9edf5]
-        shadow-[0_6px_16px_rgba(0,0,0,0.45)] ring-1 ring-black/20
-        ${big ? "h-32 w-24" : "h-12 w-9"}`}
-    >
-      <span
-        className={`absolute left-1.5 top-1 font-display font-black leading-none ${
-          big ? "text-xl" : "text-[11px]"
-        }`}
-        style={{ color: red ? "#e01e37" : "#12263d" }}
-      >
-        {rank}
-      </span>
-      <span
-        className={`absolute inset-0 grid place-items-center ${big ? "text-5xl" : "text-lg"}`}
-        style={{ color: red ? "#e01e37" : "#12263d" }}
-      >
-        {suit}
-      </span>
-    </div>
-  );
 }
 
 export function HiloGame({
@@ -185,7 +155,7 @@ export function HiloGame({
       <div className="gold-hairline rounded-3xl bg-[radial-gradient(120%_100%_at_50%_0%,#1d5a39_0%,#0d3b25_45%,#061a12_100%)] p-4">
         <div className="grid place-items-center py-2">
           {current ? (
-            <PlayingCard label={current.label} big />
+            <PlayingCard label={current.label} size="lg" />
           ) : (
             <div className="grid h-32 w-24 place-items-center rounded-xl bg-gradient-to-br from-[#1b3b6f] to-[#0d1f3d] text-4xl text-white/25 ring-1 ring-white/15">
               ?

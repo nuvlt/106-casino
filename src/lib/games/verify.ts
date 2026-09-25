@@ -15,13 +15,19 @@
 
 import { Rng } from "@/lib/games/rng-core";
 import {
+  resolveBazaarSlot,
+  resolveBlackjack,
+  resolveClassicSlot,
   resolveDice,
   resolveGuess,
   resolveMystery,
   resolvePlinko,
+  resolveRoulette,
   resolveScratch,
   resolveWheel,
+  type BjAction,
   type Outcome,
+  type RouletteBet,
 } from "@/lib/games/engine";
 
 const BLOCK = 32; // HMAC-SHA256 çıktısı
@@ -74,7 +80,17 @@ function rngFromBytes(bytes: Uint8Array): Rng {
   });
 }
 
-export type VerifiableGame = "WHEEL" | "DICE" | "PLINKO" | "SCRATCH" | "GUESS" | "MYSTERY";
+export type VerifiableGame =
+  | "WHEEL"
+  | "DICE"
+  | "PLINKO"
+  | "SCRATCH"
+  | "GUESS"
+  | "MYSTERY"
+  | "ROULETTE"
+  | "SLOT_CLASSIC"
+  | "SLOT_BAZAAR"
+  | "BLACKJACK";
 
 /** Tur parametreleri — sunucuya gönderilenlerin aynısı. */
 export interface RoundParams {
@@ -86,6 +102,9 @@ export interface RoundParams {
   picks?: number[];
   tier?: "bronze" | "silver" | "gold";
   pick?: number;
+  bets?: RouletteBet[];
+  /** Blackjack: oyuncunun hamleleri, sırasıyla. `bet` = ilk bahis. */
+  actions?: BjAction[];
 }
 
 /** Oyun koduna göre doğru çözücüyü seçer. Motor kodu ortak. */
@@ -103,10 +122,24 @@ function resolverFor(game: VerifiableGame, p: RoundParams): (rng: Rng) => Outcom
       return (rng) => resolveGuess(rng, p.bet, p.picks!);
     case "MYSTERY":
       return (rng) => resolveMystery(rng, p.bet, p.tier!, p.pick!);
+    case "ROULETTE":
+      return (rng) => resolveRoulette(rng, p.bets!);
+    case "SLOT_CLASSIC":
+      return (rng) => resolveClassicSlot(rng, p.bet);
+    case "SLOT_BAZAAR":
+      return (rng) => resolveBazaarSlot(rng, p.bet);
+    case "BLACKJACK":
+      // Deste turun başında tohumdan karılır; hamleler aynı sırayla
+      // yeniden oynatılınca aynı kartlar, aynı sonuç çıkmalı.
+      return (rng) => resolveBlackjack(rng, p.bet, p.actions ?? []);
   }
 }
 
-/** Crash ve Hilo tek adımlı değil — bunlar ayrı ele alınır. */
+/**
+ * Crash ve Hilo tek adımlı değil — bunlar ayrı ele alınır. Blackjack de
+ * çok adımlı ama hamleler tur sonucunda saklandığı için baştan oynatılarak
+ * doğrulanabiliyor.
+ */
 export const VERIFIABLE: readonly VerifiableGame[] = [
   "WHEEL",
   "DICE",
@@ -114,7 +147,38 @@ export const VERIFIABLE: readonly VerifiableGame[] = [
   "SCRATCH",
   "GUESS",
   "MYSTERY",
+  "ROULETTE",
+  "SLOT_CLASSIC",
+  "SLOT_BAZAAR",
+  "BLACKJACK",
 ];
+
+/**
+ * Doğrulayıcıya verilecek parametreler. `params` sütunu bahsi içermez;
+ * blackjack'te ise tur bahsi katlandıysa ilk bahsin iki katıdır ve
+ * hamleler tur sonucunda durur.
+ */
+export function verifyParamsFor(r: {
+  game: string;
+  bet: number;
+  params: unknown;
+  result: unknown;
+}): RoundParams {
+  if (r.game === "BLACKJACK") {
+    const res = (r.result ?? {}) as { doubled?: boolean; actions?: BjAction[] };
+    return { bet: res.doubled ? r.bet / 2 : r.bet, actions: res.actions ?? [] };
+  }
+  return { ...((r.params ?? {}) as object), bet: r.bet };
+}
+
+/** Yarım kalıp süresi dolan el yeniden oynatılamaz (oyuncu hamlesini yapmadı). */
+export function skipReason(r: { game: string; state?: string; result: unknown }): string | null {
+  if (r.state === "OPEN") return "devam ediyor";
+  if (r.game === "BLACKJACK" && (r.result as { phase?: string } | null)?.phase !== "done") {
+    return "süresi dolan el";
+  }
+  return null;
+}
 
 export function isVerifiable(game: string): game is VerifiableGame {
   return (VERIFIABLE as readonly string[]).includes(game);

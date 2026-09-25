@@ -22,7 +22,7 @@ export interface BadgeDef {
 
 export const BADGES: readonly BadgeDef[] = [
   { id: "ilk-kan", title: "İlk Adım", description: "İlk turunu oyna", icon: "🎯", tier: 1, reward: 50 * COIN },
-  { id: "turist", title: "Keşif", description: "Sekiz oyunun hepsini dene", icon: "🧭", tier: 2, reward: 250 * COIN },
+  { id: "turist", title: "Keşif", description: "Sekiz farklı oyun dene", icon: "🧭", tier: 2, reward: 250 * COIN },
   { id: "yuz-kat", title: "Yüz Kat", description: "Tek turda 100x veya üzeri yakala", icon: "💯", tier: 2, reward: 300 * COIN },
   { id: "bin-kat", title: "Bin Kat", description: "Tek turda 1000x veya üzeri yakala", icon: "🚀", tier: 3, reward: 1_000 * COIN },
   { id: "kullerinden", title: "Geri Dönüş", description: "50 coin altına düşüp aynı gün 3.000 coin üzerine çık", icon: "📈", tier: 3, reward: 500 * COIN },

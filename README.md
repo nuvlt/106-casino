@@ -1,14 +1,16 @@
 # 106 Casino
 
 Ofis içi, gerçek para içermeyen sosyal oyun platformu. Google Workspace
-(`106dijital.com`) girişi, 8 oyun, herkese günlük 1.000 coin, ortak
+(`106dijital.com`) girişi, 12 oyun, herkese günlük 1.000 coin, ortak
 sıralama tablosu.
 
 Tam şartname: [`docs/SPEC.md`](docs/SPEC.md)
 
 ## Durum
 
-- [x] Oyun matematiği — 8 oyun, tam %95 RTP (Monte Carlo + tam sayım ile doğrulandı)
+- [x] Oyun matematiği — 12 oyun; çoğu tam %95 RTP, Amerikan rulet %94,74, blackjack
+      oyuncuya bağlı (kusursuz oyunla %97,5) — Monte Carlo + tam sayım ile doğrulandı
+- [x] Rulet, Klasik 777, Kapalıçarşı (video slot) ve Blackjack
 - [x] Provably fair RNG motoru (`src/lib/games/`)
 - [x] Veritabanı şeması + migration (`src/db/`, `drizzle/`)
 - [x] Google girişi + domain kontrolü, ekonomi, cüzdan, `/api/me`
@@ -65,6 +67,14 @@ npm run build && npm start
 `*.proxy.rlwy.net`) adresleri kullanılmalı; `*.railway.internal` adresleri
 yalnızca Railway'in kendi ağı içinden çözülür, Vercel'den ulaşılamaz.
 
+## Yeni oyunlar — tek seferlik veritabanı kurulumu
+
+[`scripts/migrate-yeni-oyunlar.sql`](scripts/migrate-yeni-oyunlar.sql) dosyasını
+Railway → Postgres → Data (Query) sekmesine yapıştırıp bir kez çalıştırın. Oyun
+türü listesine dört değer ekler; mevcut veriye dokunmaz, tekrar çalıştırmak
+güvenlidir. Çalıştırılmadan kod yayına çıkarsa eski sekiz oyun etkilenmez; yeni
+dört oyun "henüz hazırlanıyor" der ve bakiyeden para düşmez.
+
 ## Davet sistemi — tek seferlik veritabanı kurulumu
 
 [`scripts/migrate-davet.sql`](scripts/migrate-davet.sql) dosyasını Railway →
@@ -112,7 +122,8 @@ npm run test:missions     # görev ödülü alma, çift ödeme koruması (15 kon
 npm run test:plinko       # çoklu top: her top ayrı tur (11 kontrol)
 npm run test:verify       # tarayıcı doğrulayıcısı = sunucu motoru (10 kontrol)
 npm run test:referral     # davet: bağlama, tek ödeme, sınır (32 kontrol)
-npm run test:all          # hepsi (158 kontrol)
+npm run test:new-games    # rulet, slotlar, blackjack + katlama akışları (39 kontrol)
+npm run test:all          # hepsi
 
 # Aynı testler GERÇEK bir Postgres sunucusuna, üretimdeki sürücüyle (postgres.js):
 TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:5432/casino_test npm run test:all
@@ -120,6 +131,8 @@ TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:5432/casino_test npm run test:
 npm run verify:migration  # migration'ı gerçekten çalıştırıp doğrula
 npm run sim               # RTP Monte Carlo doğrulaması (32 yapılandırma)
 npm run verify:hilo       # Higher/Lower tam permütasyon sayımı
+npm run verify:slots      # rulet, Klasik 777, Kapalıçarşı — kesin RTP
+npm run verify:blackjack  # temel strateji + gerçek motorla 3 oyuncu tipi (N=2000000 önerilir)
 npm run calibrate         # Plinko ödeme tablolarını yeniden üret
 
 npm run db:generate       # şema değişince yeni migration üret

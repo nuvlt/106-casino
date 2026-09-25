@@ -670,6 +670,91 @@ export async function updateOpenRound(
 }
 
 /**
+ * Açık turun ara durumunu YALNIZ beklenen adımdaysa günceller.
+ *
+ * Blackjack'te her hamle bir kart çeker; aynı "kart çek" isteği iki kez
+ * işlenirse (çift tık, ağ tekrarı, iki sekme) iki kart verilirdi. Gizli
+ * durumdaki hamle sayısı beklenenle uyuşmuyorsa satır güncellenmez ve
+ * false döner — çağıran isteği eskimiş sayıp reddeder.
+ */
+export async function updateOpenRoundAtStep(
+  db: Db,
+  opts: { userId: string; roundId: string; step: number; secret: JsonObject; publicState: JsonObject },
+): Promise<boolean> {
+  const rows = await db
+    .update(rounds)
+    .set({ secret: opts.secret, result: opts.publicState })
+    .where(
+      and(
+        eq(rounds.id, opts.roundId),
+        eq(rounds.userId, opts.userId),
+        eq(rounds.state, "OPEN"),
+        sql`jsonb_array_length(${rounds.secret} -> 'actions') = ${opts.step}`,
+      ),
+    )
+    .returning({ id: rounds.id });
+  return rows.length > 0;
+}
+
+/**
+ * Açık turda ek bahis (blackjack'te ikiye katlama).
+ *
+ * Tek transaction: bakiyeden koşullu düşüm → turun bahsini artır ve yeni
+ * gizli durumu yaz → deftere BET kaydı. Tur yalnız beklenen bahisteyken
+ * (henüz katlanmamışken) ve beklenen adımdayken güncellenir; aksi halde
+ * hiçbir şey yazılmaz. Para yetmezse düşüm başarısız olur, tur aynen kalır.
+ */
+export async function raiseOpenRoundBet(
+  db: Db,
+  opts: {
+    userId: string;
+    roundId: string;
+    extra: number;
+    expectedBet: number;
+    step: number;
+    secret: JsonObject;
+    publicState: JsonObject;
+  },
+): Promise<{ balance: number }> {
+  return db.transaction(async (tx) => {
+    // Önce düşüm: kullanıcı satırını kilitler (bkz. openBet'teki sıra notu).
+    const afterDebit = await debit(tx, opts.userId, opts.extra);
+
+    const raised = await tx
+      .update(rounds)
+      .set({
+        bet: sql`${rounds.bet} + ${opts.extra}`,
+        secret: opts.secret,
+        result: opts.publicState,
+      })
+      .where(
+        and(
+          eq(rounds.id, opts.roundId),
+          eq(rounds.userId, opts.userId),
+          eq(rounds.state, "OPEN"),
+          eq(rounds.bet, opts.expectedBet),
+          sql`jsonb_array_length(${rounds.secret} -> 'actions') = ${opts.step}`,
+        ),
+      )
+      .returning({ id: rounds.id });
+    if (raised.length === 0) {
+      // Transaction geri alınır: düşüm de kalıcı olmaz.
+      throw new WalletError("Bu el değişmiş, sayfayı yenileyin", "ROUND_CLOSED");
+    }
+
+    await tx.insert(ledgerEntries).values({
+      userId: opts.userId,
+      type: "BET",
+      amount: -opts.extra,
+      balanceAfter: afterDebit,
+      roundId: opts.roundId,
+      note: "ikiye katlama",
+    });
+    return { balance: afterDebit };
+  });
+}
+
+/**
  * Açık turu kapatır. Ödeme tutarı ve çarpan SUNUCUDA hesaplanmış olmalıdır.
  * Koşullu UPDATE (state = OPEN) aynı turun iki kez ödenmesini engeller.
  */

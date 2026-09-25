@@ -41,6 +41,24 @@ export function roundDetail(game: string, result: unknown): string {
         return typeof r.pick === "number"
           ? `${TIER[String(r.tier)] ?? ""} kasa · ${r.pick + 1}. kutu`.trim()
           : "";
+      case "ROULETTE":
+        return typeof r.label === "string" ? `Top: ${r.label}` : "";
+      case "SLOT_CLASSIC":
+        return typeof r.label === "string" ? r.label : "";
+      case "SLOT_BAZAAR": {
+        const free = Array.isArray(r.free) ? r.free.length : 0;
+        return free > 0 ? `${free} bedava dönüş` : "Normal dönüş";
+      }
+      case "BLACKJACK": {
+        const RESULT: Record<string, string> = {
+          blackjack: "Blackjack", win: "Kazandı", push: "Berabere", lose: "Krupiye kazandı",
+          bust: "Battı", dealer_blackjack: "Krupiye blackjack",
+        };
+        const pt = typeof r.playerTotal === "number" ? r.playerTotal : "?";
+        const dt = typeof r.dealerTotal === "number" ? r.dealerTotal : "?";
+        const res = typeof r.result === "string" ? RESULT[r.result] ?? "" : "Süresi doldu";
+        return `${res} · ${pt} – ${dt}${r.doubled ? " · katlandı" : ""}`;
+      }
       case "HIGHERLOWER": {
         const cards = Array.isArray(r.cards)
           ? (r.cards as { label?: string }[]).map((c) => c.label ?? "?")

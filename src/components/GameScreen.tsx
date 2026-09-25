@@ -15,6 +15,10 @@ import { ScratchGame } from "@/components/games/ScratchGame";
 import { GuessGame } from "@/components/games/GuessGame";
 import { MysteryGame } from "@/components/games/MysteryGame";
 import { HiloGame } from "@/components/games/HiloGame";
+import { RouletteGame } from "@/components/games/RouletteGame";
+import { ClassicSlotGame } from "@/components/games/ClassicSlotGame";
+import { BazaarSlotGame } from "@/components/games/BazaarSlotGame";
+import { BlackjackGame } from "@/components/games/BlackjackGame";
 
 /** Tüm oyun bileşenleri aynı sözleşmeyi paylaşır. */
 interface GameProps {
@@ -33,6 +37,10 @@ const GAME_UI: Record<string, ComponentType<GameProps>> = {
   guess: GuessGame,
   mystery: MysteryGame,
   hilo: HiloGame,
+  roulette: RouletteGame,
+  slot: ClassicSlotGame,
+  bazaar: BazaarSlotGame,
+  blackjack: BlackjackGame,
 };
 
 /** Oyun sayfalarının ortak kabuğu: başlık, bakiye ve oyunun kendisi. */

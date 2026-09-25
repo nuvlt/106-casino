@@ -36,7 +36,7 @@ export function InviteCard() {
 
   const url = `${origin}/davet/${data.code}`;
   const bonus = coinsShort(data.bonus);
-  const shareText = `106 Casino'da her gün 1.000 coin bedava, 8 oyun, ofis sıralaması 🎰 Bu linkle katıl, ikimize de +${bonus} coin!`;
+  const shareText = `106 Casino'da her gün 1.000 coin bedava, rulet, blackjack, slotlar ve ofis sıralaması 🎰 Bu linkle katıl, ikimize de +${bonus} coin!`;
 
   const copy = async () => {
     try {

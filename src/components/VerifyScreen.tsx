@@ -11,6 +11,8 @@ import { sfx } from "@/lib/sound";
 import {
   isVerifiable,
   recomputeRound,
+  skipReason,
+  verifyParamsFor,
   sha256Hex,
   type RoundParams,
 } from "@/lib/games/verify";
@@ -106,6 +108,11 @@ export function VerifyScreen() {
         out[r.id] = { status: "skipped", why: "çok adımlı oyun" };
         continue;
       }
+      const why = skipReason(r);
+      if (why) {
+        out[r.id] = { status: "skipped", why };
+        continue;
+      }
       try {
         const again = await recomputeRound({
           game: r.game,
@@ -115,8 +122,8 @@ export function VerifyScreen() {
           // `params` sütunu bahsi İÇERMEZ — bahis turun kendi sütununda
           // durur. Çözücüler bahsi argüman olarak istediği için burada
           // birleştiriliyor; unutulursa ödeme NaN çıkar ve her tur
-          // "uyuşmadı" görünür.
-          params: { ...r.params, bet: r.bet },
+          // "uyuşmadı" görünür. Blackjack'te hamleler sonuçtan gelir.
+          params: verifyParamsFor(r),
         });
         const sameMult = Math.round(again.mult * 10_000) === r.multX4;
         const samePayout = again.payout === r.payout;

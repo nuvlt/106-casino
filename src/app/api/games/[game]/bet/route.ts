@@ -1,7 +1,8 @@
 /**
  * POST /api/games/:game/bet — tek adımlı oyunların tamamı.
  *
- * Wheel, Dice, Plinko, Scratch, Guess, Mystery aynı akıştan geçer:
+ * Wheel, Dice, Plinko, Scratch, Guess, Mystery, Rulet, Klasik 777 ve
+ * Kapalıçarşı aynı akıştan geçer:
  * doğrula → bakiyeyi atomik düş → sunucuda çöz → öde → defterle.
  * İstemci yalnızca sonucun animasyonunu oynatır.
  */
@@ -15,18 +16,24 @@ import { settleRound, type Game } from "@/lib/wallet";
 import type { Outcome } from "@/lib/games/engine";
 import type { Rng } from "@/lib/games/rng-core";
 import {
+  resolveBazaarSlot,
+  resolveClassicSlot,
   resolveDice,
   resolveGuess,
   resolveMystery,
   resolvePlinko,
+  resolveRoulette,
   resolveScratch,
   resolveWheel,
 } from "@/lib/games/engine";
 import {
+  bazaarSlotParams,
+  classicSlotParams,
   diceParams,
   guessParams,
   mysteryParams,
   plinkoParams,
+  rouletteParams,
   scratchParams,
   wheelParams,
 } from "@/lib/validation";
@@ -67,6 +74,22 @@ const GAMES = {
     schema: mysteryParams,
     resolve: (b: z.infer<typeof mysteryParams>) => (rng: Rng) =>
       resolveMystery(rng, b.bet, b.tier, b.pick),
+  },
+  roulette: {
+    game: "ROULETTE" as Game,
+    schema: rouletteParams,
+    // `bet` şemada bahislerin toplamı olarak üretilir; ortak akış değişmez.
+    resolve: (b: z.infer<typeof rouletteParams>) => (rng: Rng) => resolveRoulette(rng, b.bets),
+  },
+  slot: {
+    game: "SLOT_CLASSIC" as Game,
+    schema: classicSlotParams,
+    resolve: (b: z.infer<typeof classicSlotParams>) => (rng: Rng) => resolveClassicSlot(rng, b.bet),
+  },
+  bazaar: {
+    game: "SLOT_BAZAAR" as Game,
+    schema: bazaarSlotParams,
+    resolve: (b: z.infer<typeof bazaarSlotParams>) => (rng: Rng) => resolveBazaarSlot(rng, b.bet),
   },
 } as const;
 

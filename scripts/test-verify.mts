@@ -14,8 +14,12 @@
 import { rngFor, hashServerSeed, generateServerSeed } from "../src/lib/games/rng.ts";
 import {
   resolveDice, resolveGuess, resolveMystery, resolvePlinko, resolveScratch, resolveWheel,
+  resolveRoulette, resolveClassicSlot, resolveBazaarSlot, resolveBlackjack,
+  type BjAction, type RouletteBet,
 } from "../src/lib/games/engine.ts";
-import { recomputeRound, sha256Hex, type RoundParams, type VerifiableGame } from "../src/lib/games/verify.ts";
+import {
+  recomputeRound, sha256Hex, verifyParamsFor, skipReason, type RoundParams, type VerifiableGame,
+} from "../src/lib/games/verify.ts";
 import { COIN } from "../src/lib/games/config.ts";
 
 let passed = 0, failed = 0;
@@ -42,8 +46,23 @@ function serverSide(game: VerifiableGame, nonce: number, p: RoundParams) {
     case "SCRATCH": return resolveScratch(rng, p.bet);
     case "GUESS": return resolveGuess(rng, p.bet, p.picks!);
     case "MYSTERY": return resolveMystery(rng, p.bet, p.tier!, p.pick!);
+    case "ROULETTE": return resolveRoulette(rng, p.bets!);
+    case "SLOT_CLASSIC": return resolveClassicSlot(rng, p.bet);
+    case "SLOT_BAZAAR": return resolveBazaarSlot(rng, p.bet);
+    case "BLACKJACK": return resolveBlackjack(rng, p.bet, p.actions ?? []);
   }
 }
+
+/** Rulet için çeşitli bahis karışımları. */
+function rouletteBets(n: number): RouletteBet[] {
+  const out: RouletteBet[] = [{ kind: "straight", n: n % 38, amount: 10 * COIN }];
+  if (n % 2) out.push({ kind: n % 4 === 1 ? "red" : "black", amount: 25 * COIN });
+  if (n % 3 === 0) out.push({ kind: "dozen", n: (n % 3) + 1, amount: 10 * COIN });
+  if (n % 5 === 0) out.push({ kind: "column", n: (n % 3) + 1, amount: 50 * COIN });
+  return out;
+}
+/** Blackjack: nonce'a göre farklı hamle dizileri (bazıları elin bitmesinden sonra da sürer). */
+const BJ_PLANS: BjAction[][] = [[], ["stand"], ["hit", "stand"], ["double"], ["hit", "hit", "hit"], ["hit", "hit", "stand"]];
 
 const RISKS = ["low", "medium", "high"] as const;
 const ROWS = [8, 12, 16] as const;
@@ -68,6 +87,10 @@ const CASES: { game: VerifiableGame; params: (n: number) => RoundParams }[] = [
     game: "MYSTERY",
     params: (n) => ({ bet, tier: TIERS[n % 3]!, pick: n % 9 }),
   },
+  { game: "ROULETTE", params: (n) => ({ bet, bets: rouletteBets(n) }) },
+  { game: "SLOT_CLASSIC", params: () => ({ bet }) },
+  { game: "SLOT_BAZAAR", params: () => ({ bet }) },
+  { game: "BLACKJACK", params: (n) => ({ bet, actions: BJ_PLANS[n % BJ_PLANS.length]! }) },
 ];
 
 const PER_GAME = 400;
@@ -127,6 +150,28 @@ console.log("\nVeritabanındaki kayıt biçiminden doğrulama");
   check("bet unutulursa sonuç BOZULUR (hata sessizce geçmez)",
     broken.payout !== good.payout || Number.isNaN(broken.payout),
     `bozuk ${broken.payout} / doğru ${good.payout}`);
+}
+
+console.log("\nBlackjack: kayıttan doğrulama parametreleri");
+{
+  // Katlanan elde turun bet sütunu İLK bahsin iki katıdır; doğrulayıcı
+  // ilk bahsi geri bulmalı, yoksa ödeme yarı/çift çıkar.
+  let mismatch: string | null = null;
+  for (let n = 0; n < 200 && !mismatch; n++) {
+    const actions = BJ_PLANS[n % BJ_PLANS.length]!;
+    const server = resolveBlackjack(rngFor(serverSeed, clientSeed, n), bet, actions);
+    const d = server.detail as { doubled: boolean; actions: BjAction[] };
+    // Sunucunun kaydettiği: bet sütunu = yatırılan toplam, result = sonuç ayrıntısı.
+    const stored = { game: "BLACKJACK", bet: d.doubled ? bet * 2 : bet, params: {}, result: { ...d, phase: "done" } };
+    const browser = await recomputeRound({
+      game: "BLACKJACK", serverSeed, clientSeed, nonce: n, params: verifyParamsFor(stored),
+    });
+    if (browser.payout !== server.payout || browser.mult !== server.mult) mismatch = `nonce ${n}`;
+  }
+  check("katlanan/katlanmayan eller kayıttan birebir doğrulanıyor", mismatch === null, mismatch ?? "");
+  check("süresi dolan (yarım) el atlanıyor",
+    skipReason({ game: "BLACKJACK", state: "SETTLED", result: { phase: "player" } }) !== null);
+  check("açık tur atlanıyor", skipReason({ game: "ROULETTE", state: "OPEN", result: {} }) !== null);
 }
 
 console.log("\nYanlış tohum yakalanıyor mu");

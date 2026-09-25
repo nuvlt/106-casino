@@ -42,6 +42,10 @@ export const gameEnum = pgEnum("game", [
   "GUESS",
   "MYSTERY",
   "HIGHERLOWER",
+  "ROULETTE",
+  "SLOT_CLASSIC",
+  "SLOT_BAZAAR",
+  "BLACKJACK",
 ]);
 
 export const roundStateEnum = pgEnum("round_state", [

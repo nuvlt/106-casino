@@ -12,6 +12,8 @@
  *
  * Derin Higher/Lower zincirleri buraya dahil DEĞİLDİR; onlar
  * scripts/verify-hilo.ts ile tam sayım yapılarak kanıtlanır.
+ * Slotların kesin RTP'si scripts/verify-slots.ts'de, blackjack'inki
+ * (oyuncu kararına bağlı) scripts/verify-blackjack.ts'de.
  */
 
 import { generateServerSeed, rngFor } from "../src/lib/games/rng";
@@ -28,8 +30,11 @@ import {
   hlNewRound,
   hlOdds,
   hlStep,
+  resolveBazaarSlot,
+  resolveClassicSlot,
   resolveCrash,
   resolveDice,
+  resolveRoulette,
   resolveGuess,
   resolveMystery,
   resolvePlinko,
@@ -168,6 +173,25 @@ for (const [steps, pick] of [[1, "best"], [1, "worst"], [2, "best"], [4, "best"]
     return hlCashout(state, BET).payout;
   });
 }
+
+/* --- RULET (Amerikan) — her bahis türünde teorik RTP 36/38 --- */
+const R38 = 36 / 38;
+run("Rulet", "tek sayı (17)", R38, (rng) => resolveRoulette(rng, [{ kind: "straight", n: 17, amount: BET }]).payout);
+run("Rulet", "00", R38, (rng) => resolveRoulette(rng, [{ kind: "straight", n: 37, amount: BET }]).payout);
+run("Rulet", "kırmızı", R38, (rng) => resolveRoulette(rng, [{ kind: "red", amount: BET }]).payout);
+run("Rulet", "2. düzine", R38, (rng) => resolveRoulette(rng, [{ kind: "dozen", n: 2, amount: BET }]).payout);
+run("Rulet", "karışık 4 bahis", R38, (rng) =>
+  resolveRoulette(rng, [
+    { kind: "straight", n: 0, amount: BET / 4 },
+    { kind: "black", amount: BET / 4 },
+    { kind: "column", n: 3, amount: BET / 4 },
+    { kind: "odd", amount: BET / 4 },
+  ]).payout,
+);
+
+/* --- SLOTLAR — tam sayım scripts/verify-slots.ts'de; burada motorun kendisi ölçülür --- */
+run("Klasik 777", "tek çizgi", 0.95, (rng) => resolveClassicSlot(rng, BET).payout);
+run("Kapalıçarşı", "5 çizgi + bedava dönüş", 0.95, (rng) => resolveBazaarSlot(rng, BET).payout);
 
 /* ---------------------------- rapor ---------------------------- */
 const pad = (s: string, n: number) => s.padEnd(n);

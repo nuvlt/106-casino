@@ -4,7 +4,7 @@ import { GAMES } from "@/lib/catalog";
 import { GameArt, type ArtKey } from "@/components/GameArt";
 
 /**
- * Ana sayfanın kalbi: sekiz oyunun kartları.
+ * Ana sayfanın kalbi: oyun kartları.
  * Her kartın kendi çizimi, altın çerçevesi ve ışık süpürmesi var.
  */
 export function GameGrid() {
@@ -26,6 +26,14 @@ export function GameGrid() {
                 <GameArt name={g.slug as ArtKey} />
               </div>
             </div>
+
+            {g.isNew ? (
+              <span className="absolute right-2 top-2 z-10 rounded-full bg-gradient-to-b from-[#ff7a8c] to-[#c8102e]
+                               px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white
+                               shadow-[0_2px_6px_rgba(0,0,0,0.5)] ring-1 ring-white/30">
+                yeni
+              </span>
+            ) : null}
 
             <div className="relative flex h-full flex-col justify-end p-3">
               <span className="font-display text-[15px] font-black leading-tight text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.85)]">

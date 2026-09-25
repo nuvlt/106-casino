@@ -13,7 +13,11 @@ export type ArtKey =
   | "scratch"
   | "guess"
   | "mystery"
-  | "hilo";
+  | "hilo"
+  | "roulette"
+  | "slot"
+  | "bazaar"
+  | "blackjack";
 
 const Gold = ({ id }: { id: string }) => (
   <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
@@ -206,7 +210,113 @@ function HiloArt() {
   );
 }
 
+function RouletteArt() {
+  // 38 cep: yeşil 0/00, kırmızı-siyah dönüşümlü; tepede top.
+  const n = 38;
+  return (
+    <svg viewBox="0 0 100 100" className="size-full">
+      <defs><Gold id="gr" /></defs>
+      <circle cx="50" cy="54" r="36" fill="url(#gr)" />
+      <circle cx="50" cy="54" r="32" fill="#3b1d0e" />
+      {Array.from({ length: n }, (_, i) => {
+        const a0 = ((i * 360) / n - 90) * (Math.PI / 180);
+        const a1 = (((i + 1) * 360) / n - 90) * (Math.PI / 180);
+        const r = 31;
+        const fill = i === 0 || i === 19 ? "#1f8b4c" : i % 2 ? "#12161f" : "#c8102e";
+        const f = (v: number) => Number(v.toFixed(2));
+        return (
+          <path
+            key={i}
+            d={`M50 54 L${f(50 + r * Math.cos(a0))} ${f(54 + r * Math.sin(a0))} A${r} ${r} 0 0 1 ${f(50 + r * Math.cos(a1))} ${f(54 + r * Math.sin(a1))} Z`}
+            fill={fill}
+          />
+        );
+      })}
+      <circle cx="50" cy="54" r="20" fill="#5a2d12" stroke="url(#gr)" strokeWidth="1.5" />
+      <circle cx="50" cy="54" r="7" fill="url(#gr)" />
+      {[0, 90, 180, 270].map((d) => (
+        <rect key={d} x="49" y="36" width="2" height="12" fill="url(#gr)" transform={`rotate(${d} 50 54)`} />
+      ))}
+      <circle cx="62" cy="27" r="3.4" fill="#ffffff" stroke="#c9ced8" strokeWidth="0.6" />
+    </svg>
+  );
+}
+
+function SlotArt() {
+  return (
+    <svg viewBox="0 0 100 100" className="size-full">
+      <defs><Gold id="gs" /></defs>
+      <rect x="14" y="24" width="72" height="54" rx="9" fill="url(#gs)" />
+      <rect x="19" y="30" width="62" height="42" rx="5" fill="#fff8e6" />
+      {[0, 1, 2].map((i) => (
+        <g key={i}>
+          <rect x={21 + i * 20} y="32" width="18" height="38" rx="3" fill="#ffffff" stroke="#e6d6ad" />
+          <text x={30 + i * 20} y="57" fontSize="17" fontWeight="900" textAnchor="middle" fill="#c8102e">7</text>
+        </g>
+      ))}
+      <rect x="19" y="49" width="62" height="1.6" fill="#c8102e" opacity="0.55" />
+      <rect x="86" y="34" width="4" height="26" rx="2" fill="url(#gs)" />
+      <circle cx="88" cy="32" r="5" fill="#c8102e" />
+      <rect x="30" y="16" width="40" height="10" rx="5" fill="#c8102e" />
+      <text x="50" y="24" fontSize="7" fontWeight="900" textAnchor="middle" fill="#fff3cc">JACKPOT</text>
+    </svg>
+  );
+}
+
+function BazaarArt() {
+  // Çarşı kemeri, altında kandil ve nazar boncuğu.
+  return (
+    <svg viewBox="0 0 100 100" className="size-full">
+      <defs>
+        <Gold id="gb" />
+        <radialGradient id="nazar" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#0b1a3a" />
+          <stop offset="30%" stopColor="#0b1a3a" />
+          <stop offset="31%" stopColor="#ffffff" />
+          <stop offset="52%" stopColor="#ffffff" />
+          <stop offset="53%" stopColor="#6fc3ff" />
+          <stop offset="72%" stopColor="#6fc3ff" />
+          <stop offset="73%" stopColor="#1541b8" />
+        </radialGradient>
+      </defs>
+      <path d="M18 88 L18 46 Q18 18 50 14 Q82 18 82 46 L82 88 Z" fill="url(#gb)" />
+      <path d="M25 88 L25 48 Q25 25 50 21 Q75 25 75 48 L75 88 Z" fill="#3a0f1f" />
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <rect key={i} x={27 + i * 8} y="78" width="6" height="10" fill={i % 2 ? "#c8102e" : "#1541b8"} opacity="0.85" />
+      ))}
+      <line x1="50" y1="21" x2="50" y2="34" stroke="url(#gb)" strokeWidth="1.2" />
+      <path d="M42 34 L58 34 L55 46 Q50 52 45 46 Z" fill="url(#gb)" />
+      <circle cx="50" cy="40" r="3" fill="#ffe89a" />
+      <circle cx="50" cy="64" r="12" fill="url(#nazar)" />
+    </svg>
+  );
+}
+
+function BlackjackArt() {
+  return (
+    <svg viewBox="0 0 100 100" className="size-full">
+      <defs><Gold id="gj" /></defs>
+      <g transform="translate(20 22) rotate(-10)">
+        <rect width="36" height="50" rx="5" fill="#f7f9fc" stroke="url(#gj)" strokeWidth="1.6" />
+        <text x="7" y="15" fontSize="12" fontWeight="900" fill="#12263d">A</text>
+        <path d="M18 24 C12 32 8 36 12 40 C15 43 17 41 18 39 C19 41 21 43 24 40 C28 36 24 32 18 24 Z M16 40 L20 40 L21 46 L15 46 Z" fill="#12263d" />
+      </g>
+      <g transform="translate(46 24) rotate(10)">
+        <rect width="36" height="50" rx="5" fill="#f7f9fc" stroke="url(#gj)" strokeWidth="1.6" />
+        <text x="7" y="15" fontSize="12" fontWeight="900" fill="#c8102e">K</text>
+        <path d="M18 44 C10 36 12 28 18 32 C24 28 26 36 18 44 Z" fill="#c8102e" />
+      </g>
+      <circle cx="74" cy="80" r="11" fill="#1f8b4c" stroke="#ffffff" strokeWidth="2" strokeDasharray="4 3" />
+      <text x="74" y="84" fontSize="9" fontWeight="900" textAnchor="middle" fill="#ffffff">21</text>
+    </svg>
+  );
+}
+
 const ART: Record<ArtKey, () => React.JSX.Element> = {
+  roulette: RouletteArt,
+  slot: SlotArt,
+  bazaar: BazaarArt,
+  blackjack: BlackjackArt,
   wheel: WheelArt,
   crash: CrashArt,
   dice: DiceArt,

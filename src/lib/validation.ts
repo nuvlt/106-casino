@@ -16,6 +16,8 @@ import {
   MIN_BET,
   MYSTERY_BOX_COUNT,
   CRASH_MAX_MULT,
+  ROULETTE_MAX_BETS,
+  ROULETTE_POCKETS,
 } from "@/lib/games/config";
 
 export const betAmount = z
@@ -64,7 +66,59 @@ export const crashStartParams = base.extend({
   autoCashout: z.number().int().min(101).max(CRASH_MAX_MULT).nullish(),
 });
 
+/* --------------------------- RULET --------------------------- */
+
+const chip = z.number().int("Tutar tam sayı olmalı").min(MIN_BET, `Her bahis en az ${MIN_BET / 100} coin`);
+
+const rouletteBet = z.union([
+  z.object({ kind: z.literal("straight"), n: z.number().int().min(0).max(ROULETTE_POCKETS - 1), amount: chip }),
+  z.object({ kind: z.enum(["red", "black", "odd", "even", "low", "high"]), amount: chip }),
+  z.object({ kind: z.enum(["dozen", "column"]), n: z.number().int().min(1).max(3), amount: chip }),
+]);
+
+/**
+ * Rulet: tek çevirmede birden fazla bahis. Toplam, tek bahisli oyunlardaki
+ * sınırlara tabi; aynı alana iki ayrı bahis gönderilemez (istemci birleştirir).
+ * Çıktıya `bet` (toplam) eklenir ki ortak bahis akışı değişmeden kullanılsın.
+ */
+export const rouletteParams = z
+  .object({
+    idempotencyKey,
+    bets: z.array(rouletteBet).min(1, "En az bir bahis").max(ROULETTE_MAX_BETS, `En fazla ${ROULETTE_MAX_BETS} bahis`),
+  })
+  .refine(
+    (b) => new Set(b.bets.map((x) => `${x.kind}:${"n" in x ? x.n : ""}`)).size === b.bets.length,
+    "Aynı alana iki ayrı bahis konamaz",
+  )
+  .transform((b) => ({ ...b, bet: b.bets.reduce((a, x) => a + x.amount, 0) }))
+  .pipe(
+    z.object({
+      idempotencyKey,
+      bets: z.array(rouletteBet),
+      bet: betAmount,
+    }),
+  );
+
+/* --------------------------- SLOTLAR --------------------------- */
+
+export const classicSlotParams = base;
+export const bazaarSlotParams = base;
+
 export const roundIdParam = z.object({ roundId: z.string().min(1) });
+
+/* -------------------------- BLACKJACK -------------------------- */
+
+export const blackjackStartParams = base;
+
+export const blackjackActionParams = roundIdParam.extend({
+  action: z.enum(["hit", "stand", "double"]),
+  /**
+   * İstemcinin gördüğü hamle sayısı. Sunucudaki elle uyuşmazsa (çift
+   * tıklama, ağ tekrarı, iki sekme) hamle reddedilir — aynı "kart çek"
+   * iki kez işlenip iki kart verilmez.
+   */
+  step: z.number().int().min(0).max(40),
+});
 
 export const hiloStartParams = base;
 

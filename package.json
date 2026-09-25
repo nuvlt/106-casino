@@ -13,10 +13,12 @@
     "verify:migration": "tsx scripts/verify-migration.mts",
     "sim": "tsx scripts/simulate.ts",
     "verify:hilo": "tsx scripts/verify-hilo.ts",
+    "verify:slots": "tsx scripts/verify-slots.ts",
+    "verify:blackjack": "tsx scripts/verify-blackjack.ts",
     "calibrate": "tsx scripts/calibrate-plinko.ts",
     "test": "tsx scripts/test-wallet.mts",
     "test:games": "tsx scripts/test-games.mts",
-    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run test:plinko && npm run test:verify && npm run test:together && npm run test:security && npm run test:referral && npm run verify:migration",
+    "test:all": "npm run test && npm run test:games && npm run test:stale && npm run test:crash && npm run test:outcome && npm run test:missions && npm run test:plinko && npm run test:verify && npm run test:together && npm run test:security && npm run test:referral && npm run test:new-games && npm run verify:slots && npm run verify:migration",
     "test:stale": "tsx scripts/test-stale.mts",
     "test:crash": "tsx scripts/test-crash-poll.mts",
     "test:outcome": "tsx scripts/test-outcome.mts",
@@ -25,7 +27,8 @@
     "test:verify": "tsx scripts/test-verify.mts",
     "test:together": "tsx scripts/test-together.mts",
     "test:security": "tsx scripts/test-security.mts",
-    "test:referral": "tsx scripts/test-referral.mts"
+    "test:referral": "tsx scripts/test-referral.mts",
+    "test:new-games": "tsx scripts/test-new-games.mts"
   },
   "license": "ISC",
   "devDependencies": {

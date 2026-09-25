@@ -32,6 +32,28 @@ const HTTP_FOR_WALLET: Record<string, number> = {
   DUPLICATE_KEY: 409,
 };
 
+/** Hata zincirinde (drizzle "Failed query" → postgres hatası) Postgres kodu. */
+function pgCode(e: unknown): string | undefined {
+  let cur: unknown = e;
+  for (let i = 0; i < 4 && cur && typeof cur === "object"; i++) {
+    const code = (cur as { code?: unknown }).code;
+    if (typeof code === "string" && /^[0-9A-Z]{5}$/.test(code)) return code;
+    cur = (cur as { cause?: unknown }).cause;
+  }
+  return undefined;
+}
+
+/**
+ * Yeni bir oyun, veritabanındaki oyun türü listesine (enum) henüz
+ * eklenmemişse Postgres 22P02 döner. Migration uygulanmadan kod yayına
+ * çıktığında olur; mevcut oyunlar etkilenmez, yeni oyun anlaşılır bir
+ * mesajla reddedilir (500 yerine).
+ */
+export const isGameNotReady = (e: unknown) => pgCode(e) === "22P02";
+
+export const gameNotReady = () =>
+  fail(503, "Bu oyun henüz hazırlanıyor, birazdan tekrar dene", "GAME_NOT_READY");
+
 export interface GameContext<T> {
   user: SessionUser;
   body: T;
@@ -100,6 +122,10 @@ export function gameRoute<S extends z.ZodTypeAny>(
         return fail(HTTP_FOR_WALLET[e.code] ?? 400, e.message, e.code);
       }
       if (e instanceof ApiError) return fail(e.status, e.message, e.code);
+      if (isGameNotReady(e)) {
+        console.error("Oyun türü veritabanında yok — migration uygulanmamış olabilir:", e);
+        return gameNotReady();
+      }
       console.error("Oyun ucu hatası:", e);
       return fail(500, "Beklenmeyen bir hata oluştu", "INTERNAL");
     }

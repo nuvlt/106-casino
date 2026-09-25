@@ -36,7 +36,7 @@ const SECTIONS: { title: string; body: string }[] = [
   },
   {
     title: "Oyunlar",
-    body: "Sekiz oyun da rastgele sayı üretimiyle çalışır; sonucu ne oyuncu ne de yönetici değiştirebilir.",
+    body: "Bütün oyunlar sunucuda, doğrulanabilir rastgele sayı üretimiyle çalışır; sonucu ne oyuncu ne de yönetici değiştirebilir. Geri dönüş oranı çoğunda %95, Amerikan rulette %94,7; blackjack'te kararlarına bağlı (kusursuz oyunla %97,5).",
   },
   {
     title: "Gerçek para yok",

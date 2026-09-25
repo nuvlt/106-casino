@@ -58,13 +58,27 @@ const TYPE_LABEL: Record<string, string> = {
   REFERRAL_BONUS: "davet bonusu",
 };
 
+/**
+ * Oyun başına teorik RTP (%). Rulet Amerikan kuralıyla 36/38; blackjack
+ * oyuncunun kararına bağlı olduğu için hedefi yok (uyarı verilmez).
+ */
+const TARGET_RTP: Record<string, number | null> = {
+  ROULETTE: (36 / 38) * 100,
+  BLACKJACK: null,
+};
+
 /** Gerçekleşen RTP — hedeften sapma varsa kırmızıya döner. */
-function rtpOf(wagered: number, paid: number): { pct: number; off: boolean } | null {
+function rtpOf(
+  wagered: number,
+  paid: number,
+  game?: string,
+): { pct: number; off: boolean } | null {
   if (wagered === 0) return null;
   const pct = (paid / wagered) * 100;
+  const target = game && game in TARGET_RTP ? TARGET_RTP[game] : RTP_BPS / 100;
   // Küçük örneklemde sapma normaldir; uyarı yalnızca 2.000 turdan
   // sonra ve 3 puandan fazla sapmada anlamlı olur (aşağıda kontrol).
-  return { pct, off: Math.abs(pct - RTP_BPS / 100) > 3 };
+  return { pct, off: target != null && Math.abs(pct - target) > 3 };
 }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -245,7 +259,7 @@ export function AdminScreen() {
 
             <ul className="space-y-1">
               {o.perGame.map((g) => {
-                const r = rtpOf(g.wagered, g.paid);
+                const r = rtpOf(g.wagered, g.paid, g.game);
                 const meta = GAME_BY_CODE[g.game];
                 const warn = r?.off && g.rounds >= 2000;
                 return (
@@ -273,7 +287,8 @@ export function AdminScreen() {
             </ul>
             <p className="mt-2 text-[10px] leading-relaxed text-muted">
               Gerçekleşen RTP kısa vadede hedeften sapar — bu normaldir. Uyarı rengi yalnızca 2.000
-              turdan sonra ve 3 puandan fazla sapmada çıkar.
+              turdan sonra ve 3 puandan fazla sapmada çıkar. Hedef çoğu oyunda %95, rulette %94,7;
+              blackjack oyuncunun kararına bağlı olduğundan denetlenmez.
             </p>
           </Card>
 

@@ -51,9 +51,11 @@ for (const file of files.filter((f) => f !== "0000_init.sql")) {
   }
 }
 
-// Railway'e yapıştırılacak el betiği de aynı sonucu vermeli.
-await db.exec(readFileSync("scripts/migrate-davet.sql", "utf8"));
-console.log("✅ scripts/migrate-davet.sql — kurulu şemada sorunsuz çalıştı");
+// Railway'e yapıştırılacak el betikleri de aynı sonucu vermeli.
+for (const f of ["scripts/migrate-davet.sql", "scripts/migrate-yeni-oyunlar.sql"]) {
+  await db.exec(readFileSync(f, "utf8"));
+  console.log(`✅ ${f} — kurulu şemada sorunsuz çalıştı`);
+}
 
 const tables = await db.query<{ table_name: string }>(
   `select table_name from information_schema.tables

@@ -15,9 +15,59 @@ export interface GameMeta {
   volatility: "düşük" | "orta" | "yüksek";
   maxWin: string;
   ready: boolean;
+  /** Kartta "YENİ" rozeti — yeni eklenen oyunlar birkaç hafta öne çıksın. */
+  isNew?: boolean;
 }
 
 export const GAMES: readonly GameMeta[] = [
+  {
+    slug: "roulette",
+    title: "Rulet",
+    tagline: "0 ve 00'lı Amerikan masası",
+    gradient: "from-[#3b0a0a] via-[#8b1a1a] to-[#1f8b4c]",
+    accent: "#c8102e",
+    emoji: "🔴",
+    volatility: "orta",
+    maxWin: "36x",
+    ready: true,
+    isNew: true,
+  },
+  {
+    slug: "blackjack",
+    title: "Blackjack",
+    tagline: "21'e en yakın sen ol",
+    gradient: "from-[#062a18] via-[#0f5132] to-[#3a7d44]",
+    accent: "#1f8b4c",
+    emoji: "♠️",
+    volatility: "düşük",
+    maxWin: "2,2x",
+    ready: true,
+    isNew: true,
+  },
+  {
+    slug: "bazaar",
+    title: "Kapalıçarşı",
+    tagline: "Anahtarları bul, bedava dönüşleri aç",
+    gradient: "from-[#2a0a3d] via-[#7a1f5c] to-[#e8a91b]",
+    accent: "#e8a91b",
+    emoji: "🧿",
+    volatility: "yüksek",
+    maxWin: "5.000x",
+    ready: true,
+    isNew: true,
+  },
+  {
+    slug: "slot",
+    title: "Klasik 777",
+    tagline: "Üç makara, tek çizgi",
+    gradient: "from-[#5c0a14] via-[#c8102e] to-[#ffb347]",
+    accent: "#ffb347",
+    emoji: "🍒",
+    volatility: "orta",
+    maxWin: "100x",
+    ready: true,
+    isNew: true,
+  },
   {
     slug: "guess",
     title: "Sayı Tut",
@@ -123,6 +173,10 @@ export const GAME_BY_CODE: Record<string, GameMeta> = Object.fromEntries(
       ["GUESS", "guess"],
       ["MYSTERY", "mystery"],
       ["HIGHERLOWER", "hilo"],
+      ["ROULETTE", "roulette"],
+      ["SLOT_CLASSIC", "slot"],
+      ["SLOT_BAZAAR", "bazaar"],
+      ["BLACKJACK", "blackjack"],
     ] as const
   ).map(([code, slug]) => {
     const meta = gameBySlug(slug);

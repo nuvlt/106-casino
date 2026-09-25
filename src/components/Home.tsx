@@ -12,6 +12,7 @@ import { OpenRoundBanner } from "@/components/OpenRoundBanner";
 import { QuickNav } from "@/components/QuickNav";
 import { Card, SectionTitle, Skeleton } from "@/components/ui";
 import { useMe } from "@/hooks/useMe";
+import { GAMES } from "@/lib/catalog";
 
 /**
  * Ana sayfa. Dar ekranda tek sütun; geniş ekranda oyunlar solda dört
@@ -50,7 +51,7 @@ export function Home() {
           ) : null}
 
           <section>
-            <SectionTitle right={`${8} oyun`}>Oyunlar</SectionTitle>
+            <SectionTitle right={`${GAMES.length} oyun`}>Oyunlar</SectionTitle>
             <GameGrid />
           </section>
         </div>

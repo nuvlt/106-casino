@@ -193,3 +193,137 @@ export const HL_MAX_STEPS = 25;
  * Tavana ulaşma olasılığı ihmal edilebilir; RTP'ye etkisi yok denecek kadar az.
  */
 export const HL_MAX_MULT = 10_000;
+
+/* ------------------------------------------------------------------ */
+/* RULET (Amerikan: 0 ve 00)                                           */
+/* ------------------------------------------------------------------ */
+/**
+ * 38 cep: 1–36, 0 ve 00. Her bahis türü gerçek rulet oranını öder
+ * (tek sayı 35'e 1, renk 1'e 1, düzine 2'ye 1). Ev avantajını 0 ve 00
+ * sağlar: her bahiste RTP = 36/38 = %94,737. Kurala hiç dokunulmadan
+ * platformun %95 hedefine en yakın rulet.
+ *
+ * 0-00-1-2-3 "beşli" bahsi bilerek yok: Amerikan rulette RTP'si %92,1,
+ * diğerlerinden kötü.
+ */
+export const ROULETTE_POCKETS = 38; // 0..36; 37 = "00"
+export const ROULETTE_DOUBLE_ZERO = 37;
+export const ROULETTE_RED: ReadonlySet<number> = new Set([
+  1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
+]);
+/** Ödeme, bahis dahil (brüt): tek sayı 36, dış bahisler 2 veya 3 katı. */
+export const ROULETTE_PAYOUT = {
+  straight: 36,
+  red: 2, black: 2, odd: 2, even: 2, low: 2, high: 2,
+  dozen: 3, column: 3,
+} as const;
+/** Tek çevirmede en fazla farklı bahis. */
+export const ROULETTE_MAX_BETS = 40;
+
+/* ------------------------------------------------------------------ */
+/* KLASİK 777 SLOT                                                     */
+/* ------------------------------------------------------------------ */
+/**
+ * 3 makara, tek ödeme çizgisi. Sonuç önce ağırlıklı tablodan seçilir,
+ * sonra o sonuca uyan makara görüntüsü o sınıftaki bütün dizilimler
+ * arasından eşit olasılıkla kurulur (gerçek slotlardaki "sanal makara"
+ * ile aynı ilke). Kaybeden görüntüler de eşit olasılıklı: "7-7-boş"
+ * gibi kıl payı kaçırmalar bilerek sık gösterilmez.
+ *
+ * Ağırlıklar 10.000 üzerinden, Σ(w·m) = 950.000 → RTP tam %95.
+ * Kazançların hepsi en az 1,5x (0,5x / 1x gibi "kazanç gibi görünen
+ * kayıplar" yok). Çevirmelerin %32,25'i kazançlı.
+ */
+export type ClassicSymbol = "7" | "BAR" | "🔔" | "🍉" | "🍋" | "🍒";
+export const CLASSIC_SYMBOLS: readonly ClassicSymbol[] = ["7", "BAR", "🔔", "🍉", "🍋", "🍒"];
+export const CLASSIC_FRUITS: readonly ClassicSymbol[] = ["🍉", "🍋", "🍒"];
+
+export type ClassicClass =
+  | "lose" | "cherry2" | "mixed" | "cherry3" | "lemon3" | "melon3" | "bell3" | "bar3" | "seven3";
+
+export const CLASSIC_TABLE: readonly { cls: ClassicClass; mult: number; weight: number; label: string }[] = [
+  { cls: "lose", mult: 0, weight: 6775, label: "Eşleşme yok" },
+  { cls: "cherry2", mult: 150, weight: 1500, label: "İki 🍒" },
+  { cls: "mixed", mult: 200, weight: 800, label: "Karışık meyve" },
+  { cls: "cherry3", mult: 300, weight: 450, label: "🍒🍒🍒" },
+  { cls: "lemon3", mult: 500, weight: 250, label: "🍋🍋🍋" },
+  { cls: "melon3", mult: 800, weight: 120, label: "🍉🍉🍉" },
+  { cls: "bell3", mult: 1200, weight: 70, label: "🔔🔔🔔" },
+  { cls: "bar3", mult: 2500, weight: 30, label: "BAR BAR BAR" },
+  { cls: "seven3", mult: 10000, weight: 5, label: "7 7 7" },
+];
+
+/* ------------------------------------------------------------------ */
+/* KAPALIÇARŞI (5 makara video slot)                                   */
+/* ------------------------------------------------------------------ */
+/**
+ * 5×3 ızgara, 5 sabit çizgi. Her hücre makarasının ağırlık tablosundan
+ * bağımsız çekilir. 🧿 Nazar joker (2–5. makaralarda, 🗝️ hariç her
+ * şeyin yerine geçer), 🗝️ Çarşı anahtarı dağılım sembolü: ekranın
+ * herhangi bir yerinde 3+ tane → ödeme + 10 bedava dönüş (kazançlar ×2,
+ * bedava dönüşte tekrar tetiklenirse +10; toplam en fazla 50).
+ *
+ * Çizgi ödemeleri TOPLAM bahsin katı (yüzde birlik) — en küçük kazanç
+ * 1,5x. RTP'yi scripts/verify-bazaar.ts TAM olarak hesaplar (her hücre
+ * bağımsız olduğundan çizgi beklentisi kapalı biçimde bulunur, bedava
+ * dönüş zinciri Wald özdeşliğiyle): %95,000017.
+ */
+export type BazaarSymbol = "H1" | "H2" | "H3" | "M1" | "M2" | "L1" | "L2" | "W" | "S";
+export const BAZAAR_PAYING: readonly BazaarSymbol[] = ["H1", "H2", "H3", "M1", "M2", "L1", "L2"];
+export const BAZAAR_SYMBOLS: readonly BazaarSymbol[] = [...BAZAAR_PAYING, "W", "S"];
+export const BAZAAR_ICON: Record<BazaarSymbol, string> = {
+  H1: "💰", H2: "🏺", H3: "🪔", M1: "☕", M2: "🫖", L1: "🌶️", L2: "🍬", W: "🧿", S: "🗝️",
+};
+export const BAZAAR_NAME: Record<BazaarSymbol, string> = {
+  H1: "Altın kese", H2: "Küp", H3: "Kandil", M1: "Türk kahvesi", M2: "Çaydanlık",
+  L1: "Baharat", L2: "Lokum", W: "Nazar (joker)", S: "Çarşı anahtarı",
+};
+/** Makara başına ağırlık; 1. makarada joker yok. */
+export const BAZAAR_WEIGHTS: readonly Record<BazaarSymbol, number>[] = [0, 1, 2, 3, 4].map((i) => ({
+  H1: 20, H2: 30, H3: 40, M1: 140, M2: 150, L1: 201, L2: 225, W: i === 0 ? 0 : 12, S: 22,
+}));
+/** 3 / 4 / 5 aynı sembol → toplam bahsin katı (yüzde birlik). */
+export const BAZAAR_PAYS: Record<Exclude<BazaarSymbol, "W" | "S">, readonly [number, number, number]> = {
+  H1: [600, 2000, 15000],
+  H2: [450, 1500, 7500],
+  H3: [350, 1000, 4000],
+  M1: [300, 800, 3000],
+  M2: [250, 600, 2000],
+  L1: [200, 500, 1500],
+  L2: [150, 400, 1000],
+};
+/** 3 / 4 / 5+ anahtar → toplam bahsin katı (yüzde birlik). */
+export const BAZAAR_SCATTER_PAYS: readonly [number, number, number] = [200, 1000, 5000];
+export const BAZAAR_LINES: readonly (readonly number[])[] = [
+  [1, 1, 1, 1, 1],
+  [0, 0, 0, 0, 0],
+  [2, 2, 2, 2, 2],
+  [0, 1, 2, 1, 0],
+  [2, 1, 0, 1, 2],
+];
+export const BAZAAR_FREE_SPINS = 10;
+export const BAZAAR_FS_MULT = 2;
+export const BAZAAR_FS_CAP = 50;
+/** Tek turda (bedava dönüşler dahil) en fazla bahsin 5.000 katı. */
+export const BAZAAR_MAX_WIN_X = 5_000;
+
+/* ------------------------------------------------------------------ */
+/* BLACKJACK                                                           */
+/* ------------------------------------------------------------------ */
+/**
+ * 6 deste, her elde yeni karılır. Blackjack 6:5 öder, krupiye yumuşak
+ * 17'de kart çeker (H17), as veya onluk açıkken krupiye blackjack'e
+ * bakar (peek). İlk iki kartta ikiye katlama var; bölme (split),
+ * sigorta ve teslim yok.
+ *
+ * Oyuncunun kararına bağlı olduğundan RTP sabit değil:
+ *   kusursuz temel strateji → %97,3   (scripts/verify-blackjack.ts)
+ *   "krupiye gibi oyna" (17'ye kadar çek) → daha düşük, sim çıktısına bakın
+ */
+export const BJ_DECKS = 6;
+/** Bir elde en fazla kullanılabilecek kart sayısından fazlası çekilir. */
+export const BJ_SHOE_DRAW = 80;
+/** Blackjack ödemesi: 6:5 → bahis + bahis·6/5. */
+export const BJ_PAY_NUM = 6;
+export const BJ_PAY_DEN = 5;
+export const BJ_ROUND_TTL_MS = 30 * 60_000;

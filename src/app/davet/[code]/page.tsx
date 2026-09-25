@@ -7,12 +7,13 @@ import { LiveTeaser } from "@/components/LiveTeaser";
 import { coinsShort, shortName } from "@/lib/format";
 import { DAILY_GRANT, REFERRAL_BONUS } from "@/lib/games/config";
 import { findInviterByCode } from "@/lib/referral";
+import { GAMES } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "106 Casino — davetlisin 🎰",
-  description: "Her gün 1.000 coin, 8 oyun, ofis sıralaması. Gerçek para yok, sadece gurur.",
+  description: "Her gün 1.000 coin, rulet, blackjack, slotlar ve ofis sıralaması. Gerçek para yok, sadece gurur.",
 };
 
 async function inviterFor(code: string): Promise<{ name: string | null } | null> {
@@ -73,7 +74,8 @@ export default async function DavetPage({ params }: { params: Promise<{ code: st
               Her gün {coinsShort(DAILY_GRANT)} coin
             </li>
             <li className="rounded-2xl bg-black/25 px-2 py-3 ring-1 ring-white/10">
-              <div className="mb-1 text-lg">🎡</div>8 oyun
+              <div className="mb-1 text-lg">🎰</div>
+              {GAMES.length} oyun
             </li>
             <li className="rounded-2xl bg-black/25 px-2 py-3 ring-1 ring-white/10">
               <div className="mb-1 text-lg">🏆</div>

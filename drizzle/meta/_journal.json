@@ -15,6 +15,13 @@
       "when": 1790222382805,
       "tag": "0001_davet",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790310578713,
+      "tag": "0002_yeni_oyunlar",
+      "breakpoints": true
     }
   ]
 }
