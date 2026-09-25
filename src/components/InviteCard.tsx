@@ -18,8 +18,12 @@ interface InviteResponse {
  * "Arkadaşını getir" kartı — kişisel davet linki, paylaş/kopyala ve
  * davet karnesi. Davet sistemi kullanılamıyorsa (tablolar henüz
  * kurulmadıysa) kart hiç görünmez.
+ *
+ * `compact`: yan sütunda "Bugünün kasası" ile yan yana, dar bir alanda
+ * gösterilirken kullanılır — link kutusu ve karne satırı kaldırılır,
+ * tek bir paylaş/kopyala düğmesi kalır.
  */
-export function InviteCard() {
+export function InviteCard({ compact = false }: { compact?: boolean }) {
   const { data } = useApi<InviteResponse>("/api/invite");
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
@@ -58,6 +62,36 @@ export function InviteCard() {
       /* kullanıcı paylaşım penceresini kapattı — sorun değil */
     }
   };
+
+  if (compact) {
+    const action = async () => {
+      if (canShare) await share();
+      else await copy();
+    };
+    return (
+      <div id="davet" className="scroll-mt-24">
+        <Card className="p-3">
+          <div className="mb-1.5 text-[11px] font-black leading-tight text-white/90">
+            Arkadaşını getir 🎁
+          </div>
+          <p className="mb-2 text-[10px] leading-snug text-white/70">
+            Katılana <strong className="text-gold">+{bonus} coin</strong>
+          </p>
+          <button
+            type="button"
+            onClick={action}
+            className="gold-metal shine w-full rounded-xl py-2 font-display text-[11px] font-black text-[#3a2500]
+                       shadow-[0_3px_0_#7a5804] transition active:translate-y-[2px] active:shadow-[0_1px_0_#7a5804]"
+          >
+            {copied ? "Kopyalandı ✓" : canShare ? "Paylaş" : "Kopyala"}
+          </button>
+          {data.invited > 0 ? (
+            <p className="mt-1.5 text-center text-[10px] text-muted">{data.invited} kişi katıldı</p>
+          ) : null}
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div id="davet" className="scroll-mt-24">

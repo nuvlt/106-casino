@@ -7,8 +7,37 @@ import type { MeResponse } from "@/hooks/useMe";
 /**
  * Ana sayfanın kasa bölümü.
  * Yeşil çuha, altın çerçeve, jeton yığını — üstünde günün bakiyesi.
+ *
+ * `compact`: yan sütunda "Arkadaşını getir" kartının yanında dar bir
+ * alanda gösterilirken kullanılır — jeton animasyonu ve rozet şeridi
+ * kaldırılır, sadece bakiye kalır (üst şeritteki bakiye zaten her zaman
+ * görünür, bu yüzden burada kaybı yok).
  */
-export function Hero({ me }: { me: MeResponse }) {
+export function Hero({ me, compact = false }: { me: MeResponse; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div
+        className="gloss relative overflow-hidden rounded-3xl p-[2px]
+                   bg-gradient-to-b from-[#ffd977] via-[#a9760a] to-[#7a5804]
+                   shadow-[0_10px_24px_rgba(0,0,0,0.45)]"
+      >
+        <div
+          className="relative overflow-hidden rounded-[20px] px-3 py-3
+                     bg-[radial-gradient(120%_120%_at_50%_-20%,#2b9a5e_0%,#14663a_38%,#0a3a22_75%,#06281a_100%)]"
+        >
+          <div className="pointer-events-none absolute -left-6 -top-10 size-24 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative text-[10px] font-bold uppercase tracking-widest text-[#9fe6bd]">
+            Bugünün kasası
+          </div>
+          <div className="gold-text font-display tabular relative mt-0.5 text-2xl font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+            {coins(me.wallet.balance)}
+          </div>
+          <p className="relative mt-1.5 text-[10px] leading-snug text-white/60">Her gece sıfırlanır</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="gloss relative mb-4 overflow-hidden rounded-3xl p-[2px]

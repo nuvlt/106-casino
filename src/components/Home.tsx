@@ -21,6 +21,11 @@ import { GAMES } from "@/lib/catalog";
  *
  * Görevler bilerek oyunların ÜSTÜNDE: günlük yönlendirmeyi oyuncu
  * oyun seçmeden önce görmeli.
+ *
+ * Sağ sütun sırası: önce Sıralama (sosyal/rekabet ilk göze çarpsın),
+ * altında Arkadaşını getir + Bugünün kasası yan yana (kasa burada
+ * kompakt — bakiye zaten üst şeritte her zaman görünür). Dar ekranda
+ * bu sütun da doğal olarak sol sütunun (Görevler, Oyunlar) altına akar.
  */
 export function Home() {
   const { data: me, loading, setData, reload } = useMe(30_000);
@@ -39,11 +44,9 @@ export function Home() {
       <LiveFeed />
       <OpenRoundBanner round={me?.openRound ?? null} />
 
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-6">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-6">
         {/* ---------- ANA SÜTUN ---------- */}
         <div className="space-y-4">
-          {loading && !me ? <Skeleton className="h-32" /> : me ? <Hero me={me} /> : null}
-
           {me ? (
             <Missions missions={me.missions} onClaimed={onClaimed} />
           ) : loading ? (
@@ -59,7 +62,6 @@ export function Home() {
         {/* ---------- YAN SÜTUN ---------- */}
         {me ? (
           <aside className="mt-4 space-y-4 lg:mt-0">
-            <InviteCard />
             <Leaderboard />
             <Link
               href="/siralama"
@@ -68,6 +70,11 @@ export function Home() {
             >
               Tüm sıralama ve karnen →
             </Link>
+
+            <div className="grid grid-cols-2 gap-3">
+              <InviteCard compact />
+              <Hero me={me} compact />
+            </div>
 
             <Card>
               <SectionTitle right={`${me.badges.length} rozet`}>Başarımların</SectionTitle>
